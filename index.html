@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Comando — Empresa Fictícia S/A</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        /* Ajuste do Layout Base e Reset */
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dashboard-header h1 {
+            font-size: 26px;
+            color: var(--white);
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        /* SELETORES E CONTROLOS */
+        .select-period {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .select-period:hover {
+            border-color: var(--lime);
+            background: var(--bg-hover);
+        }
+
+        /* CARD GRIDS (Métricas Superiores) — 6 colunas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--lime);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .stat-card.card-danger::after {
+            background: #f87171;
+        }
+
+        .stat-card.card-blue::after {
+            background: #38bdf8;
+        }
+
+        .stat-card.card-purple::after {
+            background: #a855f7;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--border-hover);
+        }
+
+        .stat-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--lime);
+            margin: 10px 0 4px;
+            line-height: 1;
+        }
+
+        .stat-card.card-danger .stat-value {
+            color: #f87171;
+        }
+
+        .stat-card.card-blue .stat-value {
+            color: #38bdf8;
+        }
+
+        .stat-card.card-purple .stat-value {
+            color: #a855f7;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-trend {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* GRÁFICOS */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .chart-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .chart-card h3 {
+            color: var(--white);
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* BARRA DE STATUS GLOBAL */
+        .status-bar {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 22px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .clock {
+            font-family: 'Inter', monospace;
+            font-size: 16px;
+            color: var(--lime);
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: var(--bg-hover);
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        /* SEÇÃO OPERACIONAL */
+        .ops-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .ops-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .ops-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .ops-card h3 {
+            color: var(--white);
+            margin: 0 0 16px 0;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* MINI TABELAS OPERACIONAIS */
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .mini-table th {
+            color: var(--muted);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .mini-table td {
+            padding: 7px 8px;
+            border-bottom: 1px solid var(--border);
+            color: var(--tbl-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mini-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mini-table tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        /* BADGES INLINE */
+        .ibadge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .ibadge-red {
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .ibadge-yellow {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .ibadge-green {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        .ibadge-blue {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .empty-ops {
+            text-align: center;
+            padding: 28px 0;
+            color: var(--muted);
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--white);
+            margin: 28px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--lime);
+            border-radius: 2px;
+            display: inline-block;
+        }
+        /* SELETORES E CONTROLOS */
+        .select-period {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .select-period:hover {
+            border-color: var(--lime);
+            background: var(--bg-hover);
+        }
+
+        /* CARD GRIDS (Métricas Superiores) — 6 colunas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--lime);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .stat-card.card-danger::after { background: #f87171; }
+        .stat-card.card-blue::after   { background: #38bdf8; }
+        .stat-card.card-purple::after { background: #a855f7; }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--border-hover);
+        }
+
+        .stat-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--lime);
+            margin: 10px 0 4px;
+            line-height: 1;
+        }
+
+        .stat-card.card-danger .stat-value  { color: #f87171; }
+        .stat-card.card-blue .stat-value    { color: #38bdf8; }
+        .stat-card.card-purple .stat-value  { color: #a855f7; }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-trend {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* GRÁFICOS */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .chart-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .chart-card h3 {
+            color: var(--white);
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* BARRA DE STATUS GLOBAL */
+        .status-bar {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 22px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .clock {
+            font-family: 'Inter', monospace;
+            font-size: 16px;
+            color: var(--lime);
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: var(--bg-hover);
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        /* SEÇÃO OPERACIONAL */
+        .ops-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .ops-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .ops-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .ops-card h3 {
+            color: var(--white);
+            margin: 0 0 16px 0;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* MINI TABELAS OPERACIONAIS */
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .mini-table th {
+            color: var(--muted);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .mini-table td {
+            padding: 7px 8px;
+            border-bottom: 1px solid var(--border);
+            color: var(--tbl-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mini-table tr:last-child td { border-bottom: none; }
+        .mini-table tr:hover td     { background: var(--bg-hover); }
+
+        /* BADGES INLINE */
+        .ibadge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .ibadge-red    { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+        .ibadge-yellow { background: rgba(251,191,36,0.15);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+        .ibadge-green  { background: rgba(74,222,128,0.15);  color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+        .ibadge-blue   { background: rgba(56,189,248,0.15);  color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+
+        .empty-ops {
+            text-align: center;
+            padding: 28px 0;
+            color: var(--muted);
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--white);
+            margin: 28px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--lime);
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        /* Dashboard header interno */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dashboard-header h1 {
+            font-size: 26px;
+            color: var(--white);
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+    <div class="app-layout">
+
+        <!-- Sidebar modular injetada por js/sidebar.js -->
+        <div id="sidebar-container"></div>
+
+        <main class="main-content fade-in" style="padding: 30px 40px;">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Bem-vindo ao Centro de Comando</h1>
+                    <p style="color:var(--muted); margin:6px 0 0; font-size:14px;">Visão geral em tempo real da
+                        infraestrutura</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <button class="btn-theme" id="themeToggleBtn" onclick="toggleTheme()" title="Alternar Tema"
+                        style="width:38px; height:38px; border-radius:50%;">
+                        <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:var(--white);">
+                            <path
+                                d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z" />
+                        </svg>
+                    </button>
+                    <div id="user-info" style="font-weight:600; color:var(--tbl-text); font-size:14px;"></div>
+                    <div class="clock" id="clock"></div>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <span class="status-dot dot-green"
+                    style="width:10px; height:10px; background:#4ade80; box-shadow:0 0 8px #4ade80; border-radius:50%; display:inline-block; animation:pulse 2s infinite;"></span>
+                <strong style="color:#4ade80;" id="globalStatusText">Sincronizando telemetria...</strong>
+                <span style="margin-left:auto; color:var(--muted); font-size:12px;">Última atualização: <span
+                        id="last-update" style="font-weight:600; color:var(--tbl-text);">--:--:--</span></span>
+            </div>
+
+            <!-- ── 6 KPI CARDS ─────────────────────────────────────── -->
+            <div class="stats-grid">
+                <div class="stat-card" id="card-tickets">
+                    <div class="stat-label">Tickets Abertos</div>
+                    <div class="stat-value skeleton">--</div>
+                    <div class="stat-trend" style="color:#fbbf24;" class="stat-value">-</div>
+                </div>
+                <div class="stat-card card-danger" id="card-criticos">
+                    <div class="stat-label">🔴 Críticos (&gt;7 dias)</div>
+                    <div class="stat-value skeleton">--</div>
+                    <div class="stat-trend" style="color:#f87171;">em aberto há mais de 7 dias</div>
+                </div>
+                <div class="stat-card" id="card-airflow">
+                    <div class="stat-label">Sucesso Airflow (7d)</div>
+                    <div class="stat-value skeleton">--%</div>
+                    <div class="stat-trend" style="color:#4ade80;" class="stat-value">-</div>
+                </div>
+                <div class="stat-card card-blue" id="card-execucoes">
+                    <div class="stat-label">Execuções Airflow (7d)</div>
+                    <div class="stat-value skeleton">--</div>
+                    <div class="stat-trend" style="color:#38bdf8;">total de DAG runs</div>
+                </div>
+                <div class="stat-card card-danger" id="card-alertas" onclick="window.location.href='zabbix.html'" style="cursor: pointer;" title="Ir para Monitoramento Zabbix">
+                    <div class="stat-label">Alertas Ativos</div>
+                    <div class="stat-value skeleton">--</div>
+                    <div class="stat-trend" style="color:#f87171;" class="stat-value">-</div>
+                </div>
+                <div class="stat-card" id="card-iris">
+                    <div class="stat-label">Eficiência Total Íris</div>
+                    <div class="stat-value skeleton">--%</div>
+                    <div class="stat-trend" style="color:#f87171;" class="stat-value">-</div>
+                </div>
+            </div>
+
+            <!-- ── GRÁFICOS ────────────────────────────────────────── -->
+            <div class="section-label">📊 Indicadores Principais</div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>🎫 Tickets por Status</span>
+                        <span id="badge-finalizados"
+                            style="font-size: 11px; background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); padding: 2px 8px; border-radius: 8px; font-weight: 700;">Entregues:
+                            --</span>
+                    </h3>
+                    <canvas id="chartTickets" height="180"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>🔄 Sucesso Airflow (Período)</h3>
+                    <canvas id="chartAirflow" height="180"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>⚠️ Alertas por Tipo</h3>
+                    <canvas id="chartAlertas" height="180"></canvas>
+                </div>
+            </div>
+
+            <!-- ── SEÇÃO OPERACIONAL ──────────────────────────────── -->
+            <div class="section-label">🔍 Operação em Tempo Real</div>
+            <div class="ops-grid">
+
+                <!-- Alertas Zabbix ao Vivo -->
+                <div class="ops-card">
+                    <h3>⚠️ Alertas Zabbix ao Vivo
+                        <span id="alerta-count-badge"
+                            style="margin-left:auto;font-size:11px;font-weight:700;color:#f87171;"></span>
+                    </h3>
+                    <div style="max-height:220px; overflow-y:auto;">
+                        <table class="mini-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Problema</th>
+                                    <th>Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tb-alertas-vivo">
+                                <tr>
+                                    <td colspan="3" class="empty-ops">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Top 5 Tickets em Aberto -->
+                <div class="ops-card">
+                    <h3>🎫 Top 5 Tickets em Aberto
+                        <a href="tickets-unificado.html"
+                            style="margin-left:auto;font-size:11px;color:var(--lime);text-decoration:none;font-weight:600;">Ver
+                            todos →</a>
+                    </h3>
+                    <div style="max-height:220px; overflow-y:auto;">
+                        <table class="mini-table">
+                            <thead>
+                                <tr>
+                                    <th>Dias</th>
+                                    <th>Analista</th>
+                                    <th>Título</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tb-tickets-top">
+                                <tr>
+                                    <td colspan="4" class="empty-ops">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+
+    <script>
+        // Configurações Globais do Chart.js
+        Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+        Chart.defaults.color = "#94a3b8";
+
+        // Validação Segura do JWT Token
+        const token = localStorage.getItem('access_token');
+        /* if (!token) window.location.replace('index.html'); */
+        else {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+                document.getElementById('user-info').innerText = payload.nome || "Painel DBA";
+            } catch (e) {
+                document.getElementById('user-info').innerText = "Admin (Local)";
+            }
+        }
+
+        function logout() { localStorage.removeItem('access_token'); window.location.replace('index.html'); }
+
+        // Alternador Dinâmico de Temas (Grava no localStorage)
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            Chart.defaults.color = isLight ? "#64748b" : "#94a3b8";
+            if (window.instanciasGraficos) {
+                Object.values(window.instanciasGraficos).forEach(chart => chart.update());
+            }
+        }
+        if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('pt-PT');
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // Gestão das instâncias dos Gráficos
+        window.instanciasGraficos = {};
+        const colors = {
+            primary: '#a3e635', success: '#4ade80', warning: '#fbbf24',
+            danger: '#f87171', info: '#38bdf8', muted: '#475569',
+            cardBg: 'rgba(30, 41, 59, 0.8)'
+        };
+
+        function initCharts() {
+            window.instanciasGraficos.tickets = new Chart(document.getElementById('chartTickets'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Em andamento', 'Impedimento', 'Nova', 'Análise', 'Finalizada'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [colors.warning, colors.danger, colors.success, colors.info, colors.muted],
+                        borderWidth: 0, hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true, cutout: '72%',
+                    plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } } }
+                }
+            });
+
+            window.instanciasGraficos.airflow = new Chart(document.getElementById('chartAirflow'), {
+                type: 'line',
+                data: {
+                    labels: ['-', '-', '-', '-', '-', '-', '-'],
+                    datasets: [{
+                        label: 'Taxa de Sucesso (%)',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: colors.primary,
+                        backgroundColor: 'rgba(163, 230, 53, 0.1)',
+                        borderWidth: 3, tension: 0.4, fill: true,
+                        pointBackgroundColor: colors.primary,
+                        pointBorderColor: colors.cardBg,
+                        pointBorderWidth: 2, pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            min: 0,    // ← corrigido: era min:80, linha sumia com taxa < 80%
+                            max: 100,
+                            ticks: { callback: v => v + '%' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toFixed(1) + '%' } }
+                    }
+                }
+            });
+
+            window.instanciasGraficos.alertas = new Chart(document.getElementById('chartAlertas'), {
+                type: 'bar',
+                data: {
+                    labels: ['Crash', 'Incorrect Key', 'MySQL', 'Outros'],
+                    datasets: [{
+                        label: 'Quantidade',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [colors.danger, colors.warning, colors.info, colors.muted],
+                        borderRadius: 6, borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // ── Utilitário de fetch ────────────────────────────────────────
+        async function apiGet(endpoint) {
+            const r = await /* fetch( */ null; // endpoint, { headers: { Authorization: `Bearer ${token}` } });
+            if (!r.ok) throw new Error(r.status);
+            return await r.json();
+        }
+
+        // ── Tickets Abertos + Críticos + Top 5 ───────────────────────
+        async function carregarTickets() {
+            try {
+                const [rRedmine, rBitrix] = await Promise.all([
+                    apiGet('/api/dba/tickets-ativos'),
+                    apiGet('/api/dba/bitrix-chamados-abertos')
+                ]);
+
+                const dadosRedmine = rRedmine.dados || [];
+                const dadosBitrix = rBitrix.dados || [];
+
+                const dados = [];
+                dadosRedmine.forEach(item => dados.push({
+                    origem: 'RedMine',
+                    id: '#' + (item.ID || 'N/A'),
+                    Assunto: item.Assunto || '-',
+                    Status: item.Status || '-',
+                    'Atribuido a': item['Atribuido a'] || '-',
+                    DiasEmAberto: item.DiasEmAberto || 0
+                }));
+                dadosBitrix.forEach(item => dados.push({
+                    origem: 'Bitrix',
+                    id: item.NR_Chamado || '-',
+                    Assunto: item.Descricao || '-',
+                    Status: item.Status || '-',
+                    'Atribuido a': item.Responsavel || '-',
+                    DiasEmAberto: item.Dias_Em_Aberto || 0
+                }));
+
+                // KPI: Total abertos
+                document.querySelectorAll('.skeleton').forEach(e => e.classList.remove('skeleton'));
+                document.querySelector('#card-tickets .stat-value').innerText = dados.length;
+                document.querySelector('#card-tickets .stat-trend').innerText =
+                    dados.length === 0 ? 'Nenhum ticket ativo' : 'Tickets ativos agora';
+
+                // KPI: Críticos (> 7 dias)
+                const criticos = dados.filter(i => (i.DiasEmAberto || 0) > 7);
+                document.querySelector('#card-criticos .stat-value').innerText = criticos.length;
+                document.querySelector('#card-criticos .stat-trend').innerText =
+                    criticos.length > 0 ? `${criticos.length} precisam de atenção` : 'Nenhum ticket crítico';
+
+                // Top 5 mais antigos
+                const top5 = [...dados]
+                    .sort((a, b) => (b.DiasEmAberto || 0) - (a.DiasEmAberto || 0))
+                    .slice(0, 5);
+
+                const tbody = document.getElementById('tb-tickets-top');
+                if (top5.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="empty-ops">Nenhum ticket em aberto 🎉</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = top5.map(item => {
+                    const dias = item.DiasEmAberto || 0;
+                    const diasColor = dias > 15 ? '#f87171' : dias > 7 ? '#fbbf24' : '#4ade80';
+                    const titulo = (item.Assunto || '-').substring(0, 35) + ((item.Assunto || '').length > 35 ? '…' : '');
+                    const analista = (item['Atribuido a'] || '-').split(' ')[0];
+                    const statusCls = (item.Status || '').toLowerCase().includes('impedimento') ? 'ibadge-red'
+                        : (item.Status || '').toLowerCase().includes('andamento') || (item.Status || '').toLowerCase().includes('progresso') ? 'ibadge-yellow'
+                            : 'ibadge-green';
+                    return `<tr>
+                    <td style="font-weight:800;color:${diasColor};text-align:center;">${dias}</td>
+                    <td style="color:var(--tbl-text);">${analista}</td>
+                    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;" title="${item.Assunto || ''}">${titulo}</td>
+                    <td><span class="ibadge ${statusCls}">${item.Status || '-'}</span></td>
+                </tr>`;
+                }).join('');
+
+            } catch (e) {
+                console.error('Erro tickets:', e);
+                document.querySelector('#card-tickets .stat-value').innerText = '?';
+            }
+        }
+
+        // ── Airflow ───────────────────────────────────────────────────
+        async function carregarAirflow() {
+            try {
+                const d = await apiGet('/api/dba/home/airflow-sucesso-global');
+                document.querySelector('#card-airflow .stat-value').innerText = d.taxa_sucesso.toFixed(1) + '%';
+                document.querySelector('#card-airflow .stat-trend').innerText =
+                    `${d.total_sucessos} de ${d.total_execucoes} execuções`;
+
+                // Novo card: total de execuções
+                document.querySelector('#card-execucoes .stat-value').innerText = d.total_execucoes;
+                document.querySelector('#card-execucoes .stat-trend').innerText =
+                    `${d.total_sucessos} com sucesso`;
+            } catch (e) { console.error('Erro airflow global:', e); }
+        }
+
+        async function carregarGraficoAirflow() {
+            try {
+                const d = await apiGet('/api/dba/home/airflow-sucesso-diario');
+                const labels = [], valores = [];
+                d.dados.forEach(item => {
+                    const dt = new Date(item.dia);
+                    labels.push(dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+                    valores.push(Number(item.taxa));
+                });
+                window.instanciasGraficos.airflow.data.labels = labels;
+                window.instanciasGraficos.airflow.data.datasets[0].data = valores;
+                window.instanciasGraficos.airflow.update();
+            } catch (e) { console.error('Erro gráfico airflow:', e); }
+        }
+
+        // ── Íris ──────────────────────────────────────────────────────
+        async function carregarIris() {
+            try {
+                const d = await apiGet('/api/dba/home/iris-eficiencia-total');
+                document.querySelector('#card-iris .stat-value').innerText =
+                    (Number(d.eficiencia) * 100).toFixed(0) + '%';
+                document.querySelector('#card-iris .stat-trend').innerText = 'Eficiência Íris';
+            } catch (e) { console.error('Erro íris:', e); }
+        }
+
+        // ── Tickets: gráfico donut ────────────────────────────────────
+        async function carregarGraficoTickets() {
+            try {
+                const d = await apiGet('/api/dba/home/redmine-resumo');
+                const rawDados = d.dados || [];
+
+                // 1. Defina as constantes de exclusão
+                const statusFinalizados = ['Finalizada', 'ENG-Finalizada', 'ENG-Finalizado Sem Alteração'];
+
+                // 2. Separe os dados recebidos da API em dois arrays
+                const dadosAtivos = rawDados.filter(item => !statusFinalizados.includes(item.Status));
+                const dadosEntregues = rawDados.filter(item => statusFinalizados.includes(item.Status));
+
+                // 4. Atualize o Badge
+                const totalEntregues = dadosEntregues.reduce((soma, item) => soma + Number(item.QTD), 0);
+                const badge = document.getElementById('badge-finalizados');
+                if (badge) {
+                    badge.innerText = `Entregues: ${totalEntregues}`;
+                }
+
+                // 3. Atualize o Chart.js
+                const totalAtivos = dadosAtivos.reduce((soma, item) => soma + Number(item.QTD), 0);
+                const labels = [], valores = [], bgColors = [];
+
+                const statusColors = {
+                    'nova': colors.success,
+                    'em andamento': colors.warning,
+                    'impedimento': colors.danger,
+                    'stand by': colors.info,
+                    'gaveta': colors.muted
+                };
+
+                dadosAtivos.forEach(item => {
+                    const pct = totalAtivos > 0 ? ((Number(item.QTD) / totalAtivos) * 100).toFixed(1) : 0;
+                    labels.push(`${item.Status} (${pct}%)`);
+                    valores.push(Number(item.QTD));
+
+                    const statusLower = String(item.Status).toLowerCase();
+                    let color = colors.info; // default fallback
+                    for (const [key, val] of Object.entries(statusColors)) {
+                        if (statusLower.includes(key)) {
+                            color = val;
+                            break;
+                        }
+                    }
+                    bgColors.push(color);
+                });
+
+                window.instanciasGraficos.tickets.data.labels = labels;
+                window.instanciasGraficos.tickets.data.datasets[0].data = valores;
+                window.instanciasGraficos.tickets.data.datasets[0].backgroundColor = bgColors;
+                window.instanciasGraficos.tickets.update();
+            } catch (e) { console.error('Erro gráfico tickets:', e); }
+        }
+
+        // ── Alertas Zabbix ────────────────────────────────────────────
+        async function carregarAlertas() {
+            try {
+                const d = await apiGet('/api/dba/home/zabbix-crash-keys');
+                const total = d.total_alertas;
+
+                // KPI card
+                document.querySelector('#card-alertas .stat-value').innerText = total;
+                document.querySelector('#card-alertas .stat-trend').innerText =
+                    total > 0 ? 'alertas críticos ativos' : 'Nenhum alerta ativo';
+
+                // Badge de contagem no card operacional
+                const badge = document.getElementById('alerta-count-badge');
+                if (total > 0) {
+                    badge.textContent = `${total} ativo${total > 1 ? 's' : ''}`;
+                }
+
+                // Tabela ao vivo
+                const tbody = document.getElementById('tb-alertas-vivo');
+                const alertas = d.dados || [];
+
+                if (alertas.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="empty-ops">✅ Nenhum alerta ativo no momento</td></tr>`;
+                } else {
+                    // Determinar tipo de cada alerta
+                    const tipoAlerta = (problema) => {
+                        const p = (problema || '').toLowerCase();
+                        if (p.includes('crash')) return { label: 'Crash', cls: 'ibadge-red' };
+                        if (p.includes('incorrect key')) return { label: 'Incorrect Key', cls: 'ibadge-yellow' };
+                        if (p.includes('mysql')) return { label: 'MySQL', cls: 'ibadge-blue' };
+                        return { label: 'Outros', cls: 'ibadge-green' };
+                    };
+
+                    tbody.innerHTML = alertas.map(a => {
+                        const t = tipoAlerta(a.problema);
+                        const hora = a.data ? new Date(a.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
+                        const problemaTrunc = (a.problema || '-').substring(0, 50) + ((a.problema || '').length > 50 ? '…' : '');
+                        return `<tr>
+                        <td><span class="ibadge ${t.cls}">${t.label}</span></td>
+                        <td title="${a.problema || ''}" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;">${problemaTrunc}</td>
+                        <td style="color:var(--muted);">${hora}</td>
+                    </tr>`;
+                    }).join('');
+                }
+
+                // Gráfico de barras (por tipo)
+                const labels = Object.keys(d.tipos);
+                const valores = Object.values(d.tipos);
+                window.instanciasGraficos.alertas.data.labels = labels.length ? labels : ['Crash', 'Incorrect Key', 'MySQL', 'Outros'];
+                window.instanciasGraficos.alertas.data.datasets[0].data = valores.length ? valores : [0, 0, 0, 0];
+                window.instanciasGraficos.alertas.update();
+
+            } catch (e) { console.error('Erro alertas:', e); }
+        }
+
+        // ── Init ──────────────────────────────────────────────────────
+        window.onload = async function () {
+            initCharts();
+
+            await Promise.all([
+                carregarTickets(),
+                carregarAirflow(),
+                carregarIris(),
+                carregarGraficoAirflow(),
+                carregarGraficoTickets(),
+                carregarAlertas(),
+            ]);
+
+            document.getElementById('globalStatusText').innerText = 'Dashboard atualizado';
+            document.getElementById('last-update').innerText = new Date().toLocaleTimeString('pt-PT');
+        };
+    </script>
+
+    <!-- Sidebar modular: injetada após o script principal para ter acesso ao token -->
+    
+
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: index.html -->
+    <script>
+        function runFinalMock_index() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('index.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('index.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('index.html'.includes('ticket') || 'index.html'.includes('redmine') || 'index.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_index();
+        setInterval(runFinalMock_index, 5000);
+    </script>
+
+</body>
+
+</html>

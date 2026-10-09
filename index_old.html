@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Monitorização DBA — Empresa Fictícia S/A</title>
+    <style>
+        /* VARIÁVEIS DE CORES - DARK MODE */
+        :root {
+            --bg: #1a1a1a; 
+            --bg2: #242424; 
+            --bg3: #2a2a2a; 
+            --bg4: #333333; 
+            --lime: #CCFF00;
+            --white: #ffffff;
+            --muted: #888888;
+            --border: rgba(255, 255, 255, 0.08); 
+            --tbl-text: #cccccc;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* VARIÁVEIS DE CORES - LIGHT MODE */
+        body.light-mode {
+            --bg: #f4f7f6;
+            --bg2: #ffffff;
+            --bg3: #ffffff;
+            --bg4: #f0f0f0;
+            --lime: #009933; 
+            --white: #111111;
+            --muted: #777777;
+            --border: rgba(0, 0, 0, 0.08);
+            --tbl-text: #444444;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--white);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 11px;
+            margin: 0;
+            padding: 15px; 
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+            overflow-x: hidden; 
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        .dash { max-width: 98%; margin: 0 auto; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .brand-box {
+            background-color: var(--lime);
+            color: var(--bg); 
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 15px;
+            border-radius: 8px; 
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(204, 255, 0, 0.2);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header h1 { font-size: 18px; font-weight: 800; color: var(--lime); margin: 0; letter-spacing: -0.5px; transition: color 0.3s;}
+        .header p { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+        .header-right { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
+
+        .btn-theme {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--white);
+            padding: 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+        .btn-theme svg { width: 16px; height: 16px; fill: var(--white); transition: fill 0.3s;}
+        .btn-theme:hover { border-color: var(--lime); background: var(--bg4); transform: scale(1.05); }
+
+        .nav-container { display: flex; gap: 8px; margin-top: 8px; }
+        .btn-nav {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--white);
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+        .btn-nav:hover { background: var(--bg4); }
+        .btn-nav.active { background: var(--lime); color: var(--bg); border-color: var(--lime); box-shadow: 0 2px 8px rgba(204, 255, 0, 0.2); }
+
+        /* ================= TICKER TMT ================= */
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-sizing: border-box;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+        .ticker-label {
+            background: var(--bg);
+            color: var(--lime);
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 10px;
+            padding: 0 15px;
+            position: relative;
+            z-index: 2;
+            border-right: 1px solid var(--border);
+            box-shadow: 10px 0 15px var(--bg2);
+        }
+        .ticker-move {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker 35s linear infinite; 
+            padding-left: 100%;
+        }
+        .ticker-wrap:hover .ticker-move { animation-play-state: paused; cursor: default; }
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+        .ticker-item { display: inline-block; padding: 0 25px; font-size: 12px; color: var(--white); }
+        .ticker-name { color: var(--lime); font-weight: 700; margin-right: 5px; }
+        .ticker-val { font-weight: 800; }
+        .ticker-sep { color: var(--muted); opacity: 0.5; margin: 0 10px; }
+        /* ================= FIM DO TICKER ================= */
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px; 
+            margin-bottom: 12px;
+        }
+
+        .cc {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px; 
+            padding: 12px; 
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .cc:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+        body.light-mode .cc:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
+
+        .ct {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ct::before { 
+            content: ''; display: inline-block; width: 8px; height: 8px;
+            background: var(--lime); border-radius: 50%;
+        }
+
+        .tbl-wrap {
+            background: var(--bg2);
+            border-radius: 6px;
+            overflow-y: auto;
+            max-height: 250px;
+            border: 1px solid var(--border);
+            flex-grow: 1;
+        }
+
+        .tbl { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+        .tbl th {
+            color: var(--muted);
+            padding: 8px 8px; 
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg2);
+            font-weight: 700;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            z-index: 10;
+            white-space: nowrap; 
+        }
+        .tbl td { 
+            padding: 6px 8px; 
+            border-bottom: 1px solid var(--border); 
+            color: var(--tbl-text); 
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis; 
+        }
+        .tbl tbody tr { transition: background 0.15s ease; }
+        .tbl tbody tr:hover td { background: var(--bg4); cursor: pointer; }
+
+        .row-active td { background: var(--bg4) !important; color: var(--lime) !important; font-weight: 700; }
+        .row-total td { font-weight: bold; background: rgba(204, 255, 0, 0.05); color: var(--lime); border-top: 2px solid var(--border); }
+
+        .server-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px; }
+        .server-item {
+            background: var(--bg4);
+            padding: 5px 8px;
+            border-radius: 4px;
+            border-left: 3px solid var(--lime);
+            color: var(--tbl-text);
+            font-weight: 500;
+            font-size: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 6px; 
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap; 
+        }
+        .status-bad { background: rgba(255, 70, 70, 0.15); color: #ff5555; border: 1px solid rgba(255, 70, 70, 0.2); }
+        .status-ok { background: rgba(0, 224, 118, 0.15); color: #00e076; border: 1px solid rgba(0, 224, 118, 0.2); }
+        .status-warn { background: rgba(240, 195, 9, 0.15); color: #f0c309; border: 1px solid rgba(240, 195, 9, 0.2); }
+        .status-default { background: rgba(255, 255, 255, 0.1); color: var(--white); border: 1px solid rgba(255, 255, 255, 0.2); } 
+
+        body.light-mode .status-bad { background: #ffebeb; color: #cc0000; border-color: #ffcccc; }
+        body.light-mode .status-ok { background: #e6f9ec; color: #00802b; border-color: #b3e6c2; }
+        body.light-mode .status-warn { background: #fdf5d3; color: #997a00; border-color: #fbe68a; }
+        body.light-mode .status-default { background: #e0e0e0; color: #333; border-color: #ccc; }
+
+        .full-width { grid-column: span 4; }
+        .half-width { grid-column: span 2; }
+
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 1400px) {
+            .grid-container { grid-template-columns: repeat(2, 1fr); }
+            .full-width, .half-width { grid-column: span 2; }
+            .server-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+<div class="dash">
+    <div class="header">
+        <div class="header-left">
+            <div class="brand-box">Empresa Fictícia S/A</div>
+            <div>
+                <h1>MONITORIZAÇÃO - DBA</h1>
+                <p>Painel de Controlo Operacional • Suporte à Decisão</p>
+                <div class="nav-container">
+                    <button id="btn-monitoria" class="btn-nav active" onclick="trocarView('monitoria')">Monitoria</button>
+                    <button id="btn-airflow" class="btn-nav" onclick="trocarView('airflow')">Airflow</button>
+                    <button id="btn-redmine" class="btn-nav" onclick="trocarView('redmine')">RedMine</button>
+                    <button id="btn-iris" class="btn-nav" onclick="trocarView('iris')">Íris</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <button class="btn-theme" onclick="toggleTheme()" title="Mudar Tema">
+                <svg id="theme-icon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="ticker-wrap redmine-item fade-in" style="display: none;">
+        <div class="ticker-label">TMT ANO CORRENTE</div>
+        <div class="ticker-move" id="ticker-tmt-content">
+            <span class="ticker-item" style="color: var(--muted);">A carregar dados do RedMine...</span>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.1s;"><div class="ct">Alertas de Processamento</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Site</th><th>Daemon</th><th>Status</th></tr></thead><tbody id="tb-proc"></tbody></table>
+        </div></div>
+        
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.15s;"><div class="ct">Alertas de Tarefas (BETA)</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Site</th><th>Servidor</th><th>Tempo (s)</th></tr></thead><tbody id="tb-tar"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.2s;"><div class="ct">Disco Insuficiente</div><div class="tbl-wrap">
+            <table class="tbl">
+                <thead><tr><th>Servidor</th><th>Maior tabela</th><th>Livre Nec.</th><th>Disco Livre</th><th>Total</th></tr></thead>
+                <tbody id="tb-disco"></tbody>
+            </table>
+        </div></div>
+        
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.25s;"><div class="ct">Munins com Erro</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th></tr></thead><tbody id="tb-munin"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.3s;"><div class="ct">Réplica BI</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th></tr></thead><tbody id="tb-rep-bi"></tbody></table>
+        </div></div>
+        
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.35s;"><div class="ct">Réplica Cliente</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th></tr></thead><tbody id="tb-rep-cli"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.4s;"><div class="ct">Sujeiras na Base</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th><th>Pasta</th></tr></thead><tbody id="tb-suj"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.45s;"><div class="ct">Falhas Rotinas Noturnas</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>ID Seq</th><th>Info Erro</th></tr></thead><tbody id="tb-rot"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.5s;"><div class="ct">SGIDB Incoerente</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th></tr></thead><tbody id="tb-sgidb"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.55s;"><div class="ct">Buffer Acima do Indicado</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th><th>RAM</th><th>Buffer</th><th>Uso (%)</th></tr></thead><tbody id="tb-buf-acima"></tbody></table>
+        </div></div>
+
+        <div class="cc monitoria-item fade-in" style="animation-delay: 0.6s;"><div class="ct">Buffer Abaixo do Indicado</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Servidor</th><th>RAM</th><th>Buffer</th><th>Uso (%)</th></tr></thead><tbody id="tb-buf-abaixo"></tbody></table>
+        </div></div>
+
+        <div class="cc half-width monitoria-item fade-in" style="animation-delay: 0.65s;">
+            <div class="ct">Versões MySQL (Clique na versão)</div>
+            <div style="display: flex; gap: 10px; flex-grow: 1; overflow: hidden;">
+                <div class="tbl-wrap" style="flex: 0.8;">
+                    <table class="tbl"><thead><tr><th>Major</th><th>Qtd</th></tr></thead><tbody id="tb-mysql-vers"></tbody></table>
+                </div>
+                <div class="tbl-wrap" style="flex: 2; border-left: 1px solid var(--border);">
+                    <div id="tb-mysql-details" class="server-grid">
+                        <div style="grid-column: span 3; text-align:center; padding:40px; color:var(--muted)">Selecione uma versão ao lado</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc half-width monitoria-item fade-in" style="animation-delay: 0.7s;">
+            <div class="ct">Backup com Tamanho Diferente</div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Servidor</th><th>Origem</th><th>Destino</th><th>Diferença</th></tr></thead>
+                    <tbody id="tb-backup"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc airflow-item fade-in" style="display: none; animation-delay: 0.1s;">
+            <div class="ct">Status Últimas Execuções (24h)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>Estado (State)</th><th>Total</th></tr></thead><tbody id="tb-air-status"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc airflow-item fade-in" style="display: none; animation-delay: 0.15s;">
+            <div class="ct">Sucesso por DAG (7 Dias)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>DAG ID</th><th>Sucessos</th><th>Falhas</th><th>Taxa Sucesso</th></tr></thead><tbody id="tb-air-suc"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc half-width airflow-item fade-in" style="display: none; animation-delay: 0.2s;">
+            <div class="ct">Top 10 DAGs: Maior Duração (7 Dias)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>DAG ID</th><th>Média Duração</th><th>Duração Máxima</th></tr></thead><tbody id="tb-air-top"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc airflow-item fade-in" style="display: none; animation-delay: 0.25s;">
+            <div class="ct">Latência do Scheduler (24h)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>DAG ID</th><th>Latência (s)</th></tr></thead><tbody id="tb-air-lat"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc airflow-item fade-in" style="display: none; animation-delay: 0.3s;">
+            <div class="ct">Tempo na Fila / Queued (12h)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>DAG ID</th><th>Task ID</th><th>Fila (s)</th></tr></thead><tbody id="tb-air-que"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc full-width airflow-item fade-in" style="display: none; animation-delay: 0.35s;">
+            <div class="ct">Deadlocks e Falhas Recentes</div>
+            <div class="tbl-wrap" style="max-height: 400px;">
+                <table class="tbl"><thead><tr><th>Evento</th><th>DAG ID</th><th>Owner</th><th>Extra Info</th><th>Data/Hora</th></tr></thead><tbody id="tb-air-dead"></tbody></table>
+            </div>
+        </div>
+
+
+        <div class="cc redmine-item fade-in" style="display: none; animation-delay: 0.1s;"><div class="ct">Resumo Chamados</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Status</th><th>Últ. Abertura</th><th>Qtd</th></tr></thead><tbody id="tb-red-resumo"></tbody></table>
+        </div></div>
+
+        <div class="cc redmine-item fade-in" style="display: none; animation-delay: 0.15s;"><div class="ct">Atribuição Chamados</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Atribuído a</th><th>Últ. Abertura</th><th>Qtd</th></tr></thead><tbody id="tb-red-atrib"></tbody></table>
+        </div></div>
+
+        <div class="cc redmine-item fade-in" style="display: none; animation-delay: 0.2s;"><div class="ct">Tipo Chamados</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Tipo</th><th>Últ. Abertura</th><th>Qtd</th></tr></thead><tbody id="tb-red-tipo"></tbody></table>
+        </div></div>
+
+        <div class="cc redmine-item fade-in" style="display: none; animation-delay: 0.25s;"><div class="ct">Chamados Finalizados</div><div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Tipo</th><th>Últ. Abertura</th><th>Qtd</th></tr></thead><tbody id="tb-red-fin"></tbody></table>
+        </div></div>
+
+        <div class="cc full-width redmine-item fade-in" style="display: none; animation-delay: 0.35s;">
+            <div class="ct">Tickets Ativos (Redmine)</div>
+            <div class="tbl-wrap" style="max-height: 600px;">
+                <table class="tbl">
+                    <thead><tr><th># ID</th><th>Cliente</th><th>Atribuído</th><th>Status</th><th>Dias</th><th>Assunto</th></tr></thead>
+                    <tbody id="tb-tic"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc full-width iris-item fade-in" style="display: none; animation-delay: 0.1s;">
+            <div class="ct">Resumo Colaborador</div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Colaborador</th><th>Meta</th><th>Realizado</th><th>Meta 20%</th><th>Meta x Realizado</th><th>Meta 20% x Real</th><th>Efetividade</th><th>Eficiência</th></tr></thead>
+                    <tbody id="tb-iris-resumo-colab"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc full-width iris-item fade-in" style="display: none; animation-delay: 0.2s;">
+            <div class="ct">Tarefas Avulsas</div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Colaborador</th><th>Gestor</th><th>Tarefas</th><th>Iris</th><th>Bitrix</th><th>RedMine</th><th>Mantis</th><th>GLPI</th><th>Sem Chamado</th><th>Dur. Seg</th><th>Dur. H</th></tr></thead>
+                    <tbody id="tb-iris-tarefas"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc half-width iris-item fade-in" style="display: none; animation-delay: 0.3s;">
+            <div class="ct">Consolidado por Usuário</div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Usuário</th><th>Tarefa</th><th>Mês Início</th><th>Qtd</th></tr></thead>
+                    <tbody id="tb-iris-cons-usu"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc half-width iris-item fade-in" style="display: none; animation-delay: 0.4s;">
+            <div class="ct">Consolidado Tarefas</div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Tarefa</th><th>Mês Início</th><th>Qtd</th></tr></thead>
+                    <tbody id="tb-iris-cons-tar"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+
+
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: index_old.html -->
+    <script>
+        function runFinalMock_index_old() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('index_old.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('index_old.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('index_old.html'.includes('ticket') || 'index_old.html'.includes('redmine') || 'index_old.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_index_old();
+        setInterval(runFinalMock_index_old, 5000);
+    </script>
+
+</body>
+</html>

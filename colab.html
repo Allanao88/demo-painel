@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Colaboradores — Painel DBA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .grid-layout { display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; margin-top: 20px; }
+        @media (max-width: 1024px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        .form-container { background-color: var(--bg3); padding: 24px; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--white); }
+        .form-section { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .form-section h3 { margin-bottom: 16px; color: var(--lime); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 10px; margin-bottom: 6px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
+        .form-group input { padding: 10px; border-radius: 6px; border: 1px solid var(--border); background-color: var(--bg2); color: var(--white); font-family: inherit; font-size: 11px; transition: border-color 0.2s; }
+        .form-group input:focus { outline: none; border-color: var(--lime); }
+        
+        .checkbox-list { display: flex; flex-direction: column; gap: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 11px; cursor: pointer; color: var(--tbl-text); }
+        .checkbox-item input { accent-color: var(--lime); }
+        
+        .btn-submit { background: var(--lime); color: #000; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; float: right; font-size: 11px; transition: opacity 0.2s, transform 0.2s; }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+        
+        .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; display: none; font-weight: bold; font-size: 11px; }
+        .success { background-color: rgba(0, 224, 118, 0.15); color: #00e076; border: 1px solid rgba(0, 224, 118, 0.3); }
+        .error { background-color: rgba(255, 85, 85, 0.15); color: #ff5555; border: 1px solid rgba(255, 85, 85, 0.3); }
+
+        /* Estilos dos Helpers do Banco */
+        .helpers-panel { display: flex; flex-direction: column; gap: 20px; }
+        .helper-card {
+            background-color: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        .helper-search-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background-color: var(--bg2);
+            color: var(--white);
+            font-size: 11px;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        .helper-search-input:focus {
+            outline: none;
+            border-color: var(--lime);
+        }
+        .helper-res-list {
+            background-color: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .helper-res-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 10px;
+        }
+        .helper-res-item:last-child {
+            border-bottom: none;
+        }
+        .helper-res-item:hover {
+            background-color: var(--bg4);
+        }
+        .helper-highlight {
+            color: var(--lime);
+            font-weight: bold;
+        }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+<div id="toast-container"></div>
+
+<div class="dash">
+    <div class="header">
+        <div class="header-left">
+            <div class="brand-box">Empresa Fictícia S/A</div>
+            <div>
+                <h1>Gestão de Colaboradores</h1>
+                <p>Cadastro Íris e Ecofin unificado (Transações & Tabela de Apoio)</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="index.html" class="btn-back">⬅ Voltar ao Portal</a>
+        </div>
+    </div>
+
+    <div class="grid-layout fade-in">
+        
+        <!-- Formulário de Cadastro -->
+        <div class="form-container">
+            <form id="formCadastroColaborador">
+                <div id="alertBox" class="alert"></div>
+                
+                <div class="form-section">
+                    <h3>1. Dados Operacionais</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Nome Completo</label><input type="text" id="nome" required placeholder="Ex: Fernando de Oliveira Machado"></div>
+                        <div class="form-group"><label>E-mail Corporativo</label><input type="email" id="email" required placeholder="Ex: fernando.machado@Empresa Fictícia S/A.com.br"></div>
+                        <div class="form-group"><label>Data de Admissão</label><input type="date" id="data_admissao" required></div>
+                        <div class="form-group"><label>Nome da Equipe</label><input type="text" id="nome_equipe" required placeholder="Consultar no painel lateral"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>2. Mapeamento de IDs (Sistemas)</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>ID Equipe Íris</label><input type="number" id="id_equipe_iris" required placeholder="ID da Equipe (Ex: 28)"></div>
+                        <div class="form-group"><label>ID Equipe Colab.</label><input type="number" id="equipe_colab" required placeholder="Ex: ID do Relógio Equipes"></div>
+                        <div class="form-group"><label>ID Gestor</label><input type="number" id="id_gestor" required placeholder="ID do gestor responsável"></div>
+                        <div class="form-group"><label>ID Função</label><input type="number" id="funcao" required placeholder="Código da Função"></div>
+                        <div class="form-group"><label>ID Função Org.</label><input type="number" id="funcao_organograma" required placeholder="Função no Organograma"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>3. Controle de Execução (Motor de Transações)</h3>
+                    <div class="checkbox-list">
+                        <label class="checkbox-item"><input type="checkbox" id="step1" checked> Passo 1: Inserir RELOGIO..FUNCIONARIOS</label>
+                        <label class="checkbox-item"><input type="checkbox" id="step2" checked> Passos 2 e 3: Tabela de Apoio (tempusernovos) & SP Ecofin</label>
+                        <label class="checkbox-item"><input type="checkbox" id="step3" checked> Passo 4: Inserir COLABORADORES</label>
+                        <label class="checkbox-item"><input type="checkbox" id="step4" checked> Passo 5: Benefícios SisEcoFin (Assíncrono)</label>
+                    </div>
+                </div>
+                <button type="submit" id="btnSubmit" class="btn-submit">Processar Cadastro</button>
+            </form>
+        </div>
+
+        <!-- Painel Lateral de Auxiliares de Consulta -->
+        <div class="helpers-panel">
+            <div class="helper-card">
+                <div class="ct" style="color: var(--lime);">🔍 Consultar Equipes Íris</div>
+                <p style="color:var(--muted); font-size:10px; margin-bottom:12px; line-height: 1.4;">Consulte a equipe para preencher os campos <strong>Nome da Equipe</strong> e <strong>ID Equipe Íris</strong> automaticamente.</p>
+                <input type="text" id="searchEquipe" class="helper-search-input" placeholder="Digite para filtrar (ex: suporte, teste)...">
+                <div id="resEquipes" class="helper-res-list">
+                    <div style="text-align:center; padding:15px; color:var(--muted); font-size:10px;">Busque uma equipe acima</div>
+                </div>
+            </div>
+
+            <div class="helper-card">
+                <div class="ct" style="color: var(--lime);">👤 Buscar ID Funcionários Relógio</div>
+                <p style="color:var(--muted); font-size:10px; margin-bottom:12px; line-height: 1.4;">Verifique se o usuário já existe e consulte o ID/Código atual no Relógio para auditoria.</p>
+                <input type="text" id="searchFuncionario" class="helper-search-input" placeholder="Digite o nome (ex: eduardo, machado)...">
+                <div id="resFuncionarios" class="helper-res-list">
+                    <div style="text-align:center; padding:15px; color:var(--muted); font-size:10px;">Busque um funcionário acima</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+
+
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: colab.html -->
+    <script>
+        function runFinalMock_colab() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('colab.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('colab.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('colab.html'.includes('ticket') || 'colab.html'.includes('redmine') || 'colab.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_colab();
+        setInterval(runFinalMock_colab, 5000);
+    </script>
+
+</body>
+</html>

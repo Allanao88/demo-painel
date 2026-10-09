@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alterar Senha — Empresa Fictícia S/A</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background-image: linear-gradient(135deg, rgba(16, 16, 16, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%), url('img/fundo.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-card {
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .brand-box {
+            display: inline-block;
+            background: var(--lime);
+            color: #000;
+            padding: 5px 12px;
+            font-weight: 900;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .login-card h2 { margin-top: 0; margin-bottom: 10px; color: #fff; }
+        .login-card p { color: #aaa; font-size: 0.9rem; margin-bottom: 25px; line-height: 1.4; }
+
+        .form-group { text-align: left; margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #ccc; font-weight: 600; font-size: 0.9rem; }
+        
+        .form-control {
+            width: 100%; padding: 12px 15px; font-size: 1rem;
+            background: rgba(10, 10, 10, 0.8); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff; border-radius: 6px; outline: none; transition: border 0.3s;
+            box-sizing: border-box;
+        }
+        .form-control:focus { border-color: var(--lime); }
+
+        .btn-action {
+            width: 100%; padding: 14px; font-size: 1.1rem; font-weight: bold;
+            background: var(--lime); color: #000; border: none; border-radius: 6px;
+            cursor: pointer; transition: transform 0.2s, background 0.3s;
+            margin-top: 10px;
+        }
+        .btn-action:hover { background: #b3e600; transform: translateY(-2px); }
+        .btn-action:disabled { background: #555; color: #888; cursor: not-allowed; }
+
+        .btn-cancel {
+            display: block; margin-top: 15px; color: #888; text-decoration: none; font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+        .btn-cancel:hover { color: #fff; }
+
+        #msg-status { margin-top: 15px; font-size: 0.9rem; font-weight: bold; min-height: 20px; }
+        .msg-error { color: #ff4444; }
+        .msg-success { color: var(--lime); }
+
+        .alert-box {
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid rgba(255, 255, 0, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #ffd700;
+            font-size: 0.8rem;
+            display: none; /* Escondido por padrão */
+        }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+<div class="login-card fade-in">
+    <div class="brand-box">Empresa Fictícia S/A</div>
+    <h2 id="titulo-tela">Alterar Senha</h2>
+    <p id="subtitulo-tela">Defina uma nova senha para sua conta corporativa.</p>
+
+    <div id="aviso-obrigatorio" class="alert-box">
+        ⚠️ <strong>Primeiro Acesso:</strong> Por política de segurança, você deve alterar a senha temporária antes de prosseguir.
+    </div>
+
+    <form id="formTroca">
+        <div class="form-group">
+            <label for="nova_senha">Nova Senha</label>
+            <input type="password" id="nova_senha" class="form-control" placeholder="Mínimo 8 caracteres" required minlength="8">
+        </div>
+        <div class="form-group">
+            <label for="confirma_senha">Confirmar Nova Senha</label>
+            <input type="password" id="confirma_senha" class="form-control" placeholder="Repita a senha" required minlength="8">
+        </div>
+        <button type="submit" class="btn-action" id="btnSubmit">Atualizar Senha</button>
+    </form>
+    
+    <div id="msg-status"></div>
+
+    <a href="index.html" id="link-voltar" class="btn-cancel">Cancelar e Voltar</a>
+</div>
+</div>
+
+
+
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: trocar-senha.html -->
+    <script>
+        function runFinalMock_trocar_senha() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('trocar-senha.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('trocar-senha.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('trocar-senha.html'.includes('ticket') || 'trocar-senha.html'.includes('redmine') || 'trocar-senha.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_trocar_senha();
+        setInterval(runFinalMock_trocar_senha, 5000);
+    </script>
+
+</body>
+</html>

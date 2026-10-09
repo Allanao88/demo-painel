@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalCloBi DBA — Empresa Fictícia S/A</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .full-width { grid-column: span 3; }
+        .third-width { grid-column: span 1; }
+        @media (max-width: 1200px) { .grid-container { grid-template-columns: 1fr; } .full-width, .third-width { grid-column: span 1; } }
+
+        /* Estilo da Barra de Pesquisa Global */
+        .search-container { grid-column: span 3; margin-bottom: 10px; }
+        .search-input {
+            width: 100%; padding: 15px 20px; font-size: 1.1rem;
+            background: rgba(30, 30, 30, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff; border-radius: 8px; backdrop-filter: blur(10px);
+            transition: border 0.3s;
+        }
+        .search-input:focus { outline: none; border-color: var(--lime); }
+        .light-mode .search-input { background: rgba(255, 255, 255, 0.9); color: #333; border-color: #ddd; }
+
+        /* Estilo das Notificações (Toasts) Nativas */
+        #toast-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast {
+            background: rgba(20, 20, 20, 0.95); color: #fff; padding: 15px 25px;
+            border-left: 5px solid var(--lime); border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            transform: translateX(120%); animation: slideIn 0.4s forwards;
+            font-size: 0.95rem; display: flex; align-items: center; gap: 10px;
+        }
+        .toast.error { border-left-color: #ff4444; }
+        .toast.fadeOut { animation: slideOut 0.4s forwards; }
+        .light-mode .toast { background: rgba(255, 255, 255, 0.95); color: #333; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        @keyframes slideIn { to { transform: translateX(0); } }
+        @keyframes slideOut { to { transform: translateX(120%); } }
+
+        /* Estilos adicionais para os KPIs do Resumo Executivo */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .kpi-card {
+            background: var(--bg2);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-left-width: 4px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .kpi-title {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 5px;
+            color: var(--white);
+        }
+        @media (max-width: 768px) {
+            .kpi-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+<div id="toast-container"></div>
+
+<div class="dash">
+    <div class="header">
+        <div class="header-left">
+            <div class="brand-box">Empresa Fictícia S/A</div>
+            <div>
+                <h1>MONITORIA CALCLOBI</h1>
+                <p>Análise de Performance • Information & Performance Schema</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="index.html" class="btn-back">⬅ Voltar ao Portal</a>
+        </div>
+    </div>
+
+    <div class="grid-container">
+
+        <!-- 0. RESUMO EXECUTIVO DE PERFORMANCE -->
+        <div class="cc full-width fade-in">
+            <div class="ct">📊 RESUMO DE DESEMPENHO — BANCO DE DADOS CALCLOBI</div>
+            <div class="kpi-container">
+                <div class="kpi-card" style="border-left-color: var(--lime);">
+                    <div class="kpi-title">Conexões Ativas</div>
+                    <div id="kpi-conexoes" class="kpi-value" class="stat-value">-</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #ff5555;">
+                    <div class="kpi-title">Tabelas Críticas (Scans)</div>
+                    <div id="kpi-scans" class="kpi-value" class="stat-value">-</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #f0c309;">
+                    <div class="kpi-title">Queries em Execução</div>
+                    <div id="kpi-processos" class="kpi-value" class="stat-value">-</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #0096FF;">
+                    <div class="kpi-title">Média Tempo Slow Queries</div>
+                    <div id="kpi-slow" class="kpi-value" class="stat-value">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-container fade-in">
+            <input type="text" id="globalSearch" class="search-input" placeholder="🔍 Pesquisar em todas as tabelas (ex: nome do utilizador, query, tabela)...">
+        </div>
+
+        <div class="cc third-width fade-in">
+            <div class="ct">Top 15 Maiores Tabelas</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>Tabela</th><th>Tamanho (GB)</th><th>Linhas</th></tr></thead><tbody id="tb-calc-tab"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc third-width fade-in">
+            <div class="ct">Conexões por Usuário / Host</div>
+            <div style="flex-grow: 1; position: relative; min-height: 220px; display: flex; align-items: center; justify-content: center; padding: 5px;">
+                <canvas id="chart-calc-users"></canvas>
+            </div>
+        </div>
+
+        <div class="cc third-width fade-in">
+            <div class="ct">Full Table Scans por Tabela</div>
+            <div style="flex-grow: 1; position: relative; min-height: 220px; display: flex; align-items: center; justify-content: center; padding: 5px;">
+                <canvas id="chart-calc-scans"></canvas>
+            </div>
+        </div>
+
+        <div class="cc full-width fade-in">
+            <div class="ct">Processos Ativos (Non-Sleep)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>Usuário</th><th>Host</th><th>Comando</th><th>Tempo (s)</th><th>Estado</th><th>Query</th></tr></thead><tbody id="tb-calc-proc"></tbody></table>
+            </div>
+        </div>
+
+        <div class="cc full-width fade-in">
+            <div class="ct">Top 10 Queries Mais Lentas (Histórico)</div>
+            <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>Tempo Total (s)</th><th>Tempo Máx (s)</th><th>Execuções</th><th>Query (Resumo)</th></tr></thead><tbody id="tb-calc-slow"></tbody></table>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+
+
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: calclobi.html -->
+    <script>
+        function runFinalMock_calclobi() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('calclobi.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('calclobi.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('calclobi.html'.includes('ticket') || 'calclobi.html'.includes('redmine') || 'calclobi.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_calclobi();
+        setInterval(runFinalMock_calclobi, 5000);
+    </script>
+
+</body>
+</html>

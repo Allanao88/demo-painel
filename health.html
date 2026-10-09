@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Monitor — Empresa Fictícia S/A</title>
+    <meta name="description" content="Painel de observabilidade em tempo real de infraestrutura: OS Oquestrador, Pipelines Airflow, Instâncias de Banco de Dados e Carga do Kernel.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ─── CSS Variables & Base Overrides ────────────────────────── */
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--white);
+            margin: 0;
+            padding: 16px;
+        }
+
+        .dash { max-width: 98%; margin: 0 auto; }
+
+        /* ─── Status Bar ─────────────────────────────────────────────── */
+        .hm-status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 22px;
+            font-size: 11px;
+            box-shadow: var(--shadow);
+        }
+        .hm-status-bar .left  { display: flex; align-items: center; gap: 12px; }
+        .hm-status-bar .right { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 11px; }
+        .hm-status-bar .right span b { color: var(--white); font-family: 'JetBrains Mono', monospace; }
+
+        /* ─── Section Header ─────────────────────────────────────────── */
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--muted);
+            margin: 0 0 14px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .section-title .accent { color: var(--lime); }
+
+        /* ─── Cards Grid Principal ───────────────────────────────────── */
+        .hm-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1200px) { .hm-cards { grid-template-columns: 1fr; } }
+
+        .hm-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+        .hm-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--lime), transparent);
+            border-radius: 14px 14px 0 0;
+            opacity: 0.8;
+        }
+        .hm-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-color: rgba(204,255,0,0.25);
+        }
+
+        .hm-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .hm-card-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .hm-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(204,255,0,0.08);
+            border: 1px solid rgba(204,255,0,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+            flex-shrink: 0;
+        }
+        .hm-card-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--white);
+            letter-spacing: -0.3px;
+        }
+        .hm-card-subtitle {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+        .hm-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 13px;
+        }
+
+        /* ─── Metric Rows & Progress Bars ────────────────────────────── */
+        .metric-row {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .metric-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .metric-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+        }
+        .metric-value-box {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .metric-subdetail {
+            font-size: 9px;
+            color: var(--muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .metric-value {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--white);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .metric-value.danger { color: #ff5555; }
+        .metric-value.warn   { color: #f0c309; }
+        .metric-value.ok     { color: #00e076; }
+
+        .progress-track {
+            height: 7px;
+            background: var(--bg4);
+            border-radius: 99px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: #00e076;
+            transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            box-shadow: 0 0 6px rgba(0,224,118,0.3);
+        }
+        .progress-fill.danger {
+            background: #ff5555;
+            box-shadow: 0 0 8px rgba(255,85,85,0.6);
+        }
+        .progress-fill.warn {
+            background: #f0c309;
+            box-shadow: 0 0 6px rgba(240,195,9,0.5);
+        }
+
+        /* ─── Grid de Load Average & Swap (OS) ────────────────────────── */
+        .load-avg-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: var(--bg2);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .load-avg-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .load-avg-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+        }
+        .load-avg-val {
+            font-size: 13px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--lime);
+        }
+
+        .swap-status-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 10px;
+        }
+        .swap-status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .swap-status-badge.ok {
+            background: rgba(0,224,118,0.12);
+            color: #00e076;
+            border: 1px solid rgba(0,224,118,0.25);
+        }
+        .swap-status-badge.danger {
+            background: rgba(255,85,85,0.15);
+            color: #ff5555;
+            border: 1px solid rgba(255,85,85,0.3);
+            animation: pulse-danger 1.5s infinite;
+        }
+
+        @keyframes pulse-danger {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* ─── Airflow Core & Funil de Tasks ───────────────────────────── */
+        .svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .svc-item {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .svc-name {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+        }
+        .svc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            width: fit-content;
+        }
+        .svc-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .svc-badge.ok   { background: rgba(0,224,118,0.12); color: #00e076; border: 1px solid rgba(0,224,118,0.25); }
+        .svc-badge.ok .dot { background: #00e076; box-shadow: 0 0 5px #00e076; }
+        .svc-badge.err  { background: rgba(255,85,85,0.12); color: #ff5555; border: 1px solid rgba(255,85,85,0.25); }
+        .svc-badge.err .dot { background: #ff5555; box-shadow: 0 0 5px #ff5555; }
+        .svc-badge.unknown { background: rgba(136,136,136,0.12); color: var(--muted); border: 1px solid rgba(136,136,136,0.2); }
+
+        .lag-container {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .lag-label { font-size: 10px; color: var(--muted); font-weight: 600; }
+        .lag-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800; }
+        .lag-value.ok { color: var(--lime); }
+        .lag-value.warn { color: #f0c309; }
+        .lag-value.danger { color: #ff5555; }
+
+        .tasks-funnel-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .funnel-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .funnel-num {
+            font-size: 18px;
+            font-weight: 900;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+        }
+        .funnel-num.running { color: var(--lime); }
+        .funnel-num.success { color: #00e076; }
+        .funnel-num.failed  { color: #ff5555; }
+        .funnel-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* ─── Databases Cards & Latência ─────────────────────────────── */
+        .srv-sql-beta {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 460px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .srv-sql-beta {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.2s ease;
+        }
+        .srv-sql-beta:hover { border-color: rgba(204,255,0,0.25); }
+        .srv-sql-beta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .srv-sql-beta {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .srv-sql-beta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background: var(--bg4);
+            padding: 7px 10px;
+            border-radius: 6px;
+        }
+        .srv-sql-beta {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        .srv-sql-beta {
+            font-size: 8px;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .srv-sql-beta {
+            font-size: 11px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .lat-badge {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .lat-excelente { background: rgba(0,224,118,0.15); color: #00e076; border: 1px solid rgba(0,224,118,0.3); }
+        .lat-alerta     { background: rgba(240,195,9,0.15); color: #f0c309; border: 1px solid rgba(240,195,9,0.3); }
+        .lat-critico    { background: rgba(255,85,85,0.15); color: #ff5555; border: 1px solid rgba(255,85,85,0.3); }
+
+        .srv-sql-beta {
+            margin-top: 2px;
+            border: 1px solid rgba(204,255,0,0.14);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.18);
+            overflow: hidden;
+        }
+        .srv-sql-beta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #CCFF00;
+            background: rgba(204,255,0,0.06);
+            border-bottom: 1px solid rgba(204,255,0,0.12);
+        }
+        .srv-sql-beta {
+            color: var(--muted);
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        .srv-sql-beta {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .srv-sql-beta th {
+            font-size: 7px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            text-align: left;
+            padding: 5px 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .srv-sql-beta td {
+            font-size: 10px;
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--white);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .srv-sql-beta tbody tr:last-child td { border-bottom: none; }
+        .srv-sql-beta tbody tr:hover { background: rgba(204,255,0,0.04); }
+        .srv-sql-beta {
+            font-weight: 700;
+            color: var(--white);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 10px;
+        }
+        .srv-sql-beta { color: #CCFF00; font-weight: 800; }
+        .srv-sql-beta {
+            padding: 8px 10px;
+            font-size: 9px;
+            color: var(--muted);
+        }
+
+        /* ─── Box Colapsável de Erro ─────────────────────────────────── */
+        .error-collapsible {
+            background: rgba(255, 85, 85, 0.08);
+            border: 1px solid rgba(255, 85, 85, 0.25);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 10px;
+        }
+        .error-toggle-btn {
+            padding: 7px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: #ff5555;
+            font-weight: 700;
+            user-select: none;
+        }
+        .error-toggle-btn:hover { background: rgba(255, 85, 85, 0.12); }
+        .error-details-box {
+            padding: 8px 10px;
+            background: var(--bg4);
+            border-top: 1px solid rgba(255, 85, 85, 0.2);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            color: #ff8888;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .error-details-box.active { display: block; }
+
+        /* ─── Skeleton Loader ────────────────────────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg4) 25%, var(--bg3) 50%, var(--bg4) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite;
+            border-radius: 6px;
+        }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* ─── Gráficos Grid & Containers ─────────────────────────────── */
+        .hm-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1000px) { .hm-charts { grid-template-columns: 1fr; } }
+
+        .chart-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: var(--shadow);
+        }
+        .chart-card-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chart-card-desc { font-size: 9px; color: var(--muted); margin-top: 2px; }
+        
+        /* Fixação de Altura Explícita para Evitar Colapso de Canvas */
+        .chart-wrap {
+            position: relative;
+            height: 250px;
+            min-height: 250px;
+            width: 100%;
+        }
+        .chart-wrap canvas {
+            height: 250px !important;
+            max-height: 250px;
+            width: 100% !important;
+        }
+
+        .days-selector { display: flex; gap: 6px; }
+        .day-btn {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .day-btn:hover { border-color: var(--lime); color: var(--white); }
+        .day-btn.active {
+            background: rgba(204,255,0,0.12);
+            border-color: var(--lime);
+            color: var(--lime);
+        }
+
+        .hm-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            background: rgba(255,85,85,0.08);
+            border: 1px solid rgba(255,85,85,0.2);
+            border-radius: 8px;
+            font-size: 11px;
+            color: #ff5555;
+            text-align: center;
+        }
+        .hm-error.muted {
+            background: var(--bg2);
+            border-color: var(--border);
+            color: var(--muted);
+        }
+
+        /* ─── Seletor de servidor (pills) ─────────────────────────────── */
+        .hm-server-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 0 0 18px 0;
+            flex-wrap: wrap;
+        }
+        .hm-server-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            box-shadow: var(--shadow);
+        }
+        .hm-server-btn {
+            appearance: none;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            padding: 8px 22px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
+        }
+        .hm-server-btn:hover {
+            color: var(--white);
+            border-color: rgba(204,255,0,0.18);
+        }
+        .hm-server-btn.active {
+            background: rgba(204,255,0,0.12);
+            border-color: #CCFF00;
+            color: #CCFF00;
+            box-shadow: 0 0 14px rgba(204,255,0,0.16);
+        }
+        .hm-dash-body {
+            transition: opacity 0.22s ease;
+        }
+        .hm-dash-body.is-switching {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+<div class="dash">
+
+    <!-- ══════════ HEADER ══════════ -->
+    <div class="header">
+        <div class="header-left">
+            <div class="brand-box">Empresa Fictícia S/A</div>
+            <div>
+                <h1 id="page-title">HEALTH MONITOR — Oquestrador</h1>
+                <p id="page-subtitle">Observabilidade em Tempo Real · OS · Airflow · Instâncias de Banco de Dados</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="index.html" class="btn-back">⬅ Voltar ao Portal</a>
+            <button id="btn-theme" class="btn-theme" title="Alternar tema" onclick="toggleTheme()">
+                <svg viewBox="0 0 24 24"><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══════════ SELETOR DE SERVIDOR ══════════ -->
+    <div class="hm-server-bar">
+        <div class="hm-server-switch" role="tablist" aria-label="Seleção de servidor">
+            <button type="button" class="hm-server-btn active" data-server="Oquestrador" role="tab" aria-selected="true" onclick="selectServidor('Oquestrador')">Oquestrador</button>
+            <button type="button" class="hm-server-btn" data-server="Data Lake" role="tab" aria-selected="false" onclick="selectServidor('Data Lake')">Data Lake</button>
+        </div>
+        <span style="font-size:10px;color:var(--muted);font-weight:600;">Alterne o host para recarregar cards e gráficos</span>
+    </div>
+
+    <div class="hm-dash-body" id="dash-body">
+    <!-- ══════════ STATUS BAR ══════════ -->
+    <div class="hm-status-bar">
+        <div class="left">
+            <span class="status-dot dot-green" id="live-dot"></span>
+            <span id="live-label" style="color:var(--white);font-weight:700;">Conectando…</span>
+        </div>
+        <div class="right">
+            <span>Última telemetria: <b id="last-read">—</b></span>
+            <span>Auto-refresh: <b>30s</b></span>
+        </div>
+    </div>
+
+    <!-- ══════════ SEÇÃO 1 — STATUS IMEDIATO ══════════ -->
+    <div class="section-title">
+        <span>⚡ Status Imediato <span class="accent" id="section-status-accent">— Máquina Oquestrador</span></span>
+        <button id="btn-refresh-current" onclick="loadAll()" style="background:none;border:none;color:var(--lime);font-size:10px;font-weight:700;cursor:pointer;padding:3px 10px;border:1px solid rgba(204,255,0,0.3);border-radius:6px;">↺ Atualizar Tudo</button>
+    </div>
+
+    <div class="hm-cards" id="cards-current">
+
+        <!-- 1. CARD OS (Oquestrador) -->
+        <div class="hm-card" id="card-os">
+            <div class="hm-card-header">
+                <div class="hm-card-header-left">
+                    <div class="hm-card-icon">🖥️</div>
+                    <div>
+                        <div class="hm-card-title">Server Load (OS)</div>
+                        <div class="hm-card-subtitle">CPU · Memória · /dbdir · Swap · Load Avg</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hm-card-body" id="os-body">
+                <div class="skeleton" style="height:140px;"></div>
+            </div>
+        </div>
+
+        <!-- 2. CARD AIRFLOW CORE -->
+        <div class="hm-card" id="card-airflow">
+            <div class="hm-card-header">
+                <div class="hm-card-header-left">
+                    <div class="hm-card-icon">🌊</div>
+                    <div>
+                        <div class="hm-card-title">Airflow Core</div>
+                        <div class="hm-card-subtitle">Webserver · Scheduler · Funil de Tasks</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hm-card-body" id="airflow-body">
+                <div class="skeleton" style="height:140px;"></div>
+            </div>
+        </div>
+
+        <!-- 3. CARD DATABASES -->
+        <div class="hm-card" id="card-db">
+            <div class="hm-card-header">
+                <div class="hm-card-header-left">
+                    <div class="hm-card-icon">🗄️</div>
+                    <div>
+                        <div class="hm-card-title">Databases Monitor</div>
+                        <div class="hm-card-subtitle">Instâncias · Bases internas · Latência · Tamanho</div>
+                    </div>
+                </div>
+                <span id="srv-sql-beta" style="font-size:9px; font-weight:800; background:rgba(204,255,0,0.12); color:var(--lime); padding:2px 8px; border-radius:12px; border:1px solid rgba(204,255,0,0.25);">0 INSTÂNCIAS</span>
+            </div>
+            <div class="hm-card-body" id="srv-sql-beta">
+                <div class="skeleton" style="height:140px;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══════════ SEÇÃO 2 — EVOLUÇÃO DO LOAD AVERAGE ══════════ -->
+    <div class="section-title">
+        <span>⚖️ Evolução do Load Average <span class="accent">— Carga do Kernel</span></span>
+        <span style="font-size:9px; color:var(--muted); font-weight:600;">Telemetria Intraday (Hoje) vs Tendência de Picos</span>
+    </div>
+
+    <div class="hm-charts">
+
+        <!-- GRÁFICO 1: Intraday Horário (Hoje) -->
+        <div class="chart-card">
+            <div>
+                <div class="chart-card-title">
+                    <span class="icon">⏱️</span>
+                    Curva Horária de Load 1m (Hoje)
+                </div>
+                <div class="chart-card-desc">Pico máximo de Load 1min (Kernel) agregado por hora durante o dia atual</div>
+            </div>
+            <div class="chart-wrap" id="wrap-chart-load-intraday">
+                <canvas id="chart-load-intraday"></canvas>
+            </div>
+        </div>
+
+        <!-- GRÁFICO 2: Tendência Histórica de Picos de Load -->
+        <div class="chart-card">
+            <div>
+                <div class="chart-card-title">
+                    <span class="icon">🌋</span>
+                    Histórico de Picos de Load (Kernel Saturation)
+                </div>
+                <div class="chart-card-desc">Pico diário máximo de Load Average (max_load) registrado por data</div>
+            </div>
+            <div class="chart-wrap" id="wrap-chart-load-peaks">
+                <canvas id="chart-load-peaks"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══════════ SEÇÃO 3 — TENDÊNCIAS HISTÓRICAS DE CAPACIDADE ══════════ -->
+    <div class="section-title">
+        <span>📈 Capacidade & Concorrência <span class="accent" id="section-peaks-accent">— Picos Diários</span></span>
+        <div class="days-selector">
+            <button class="day-btn" data-days="7"  onclick="selectDays(7)">7d</button>
+            <button class="day-btn active" data-days="14" onclick="selectDays(14)">14d</button>
+            <button class="day-btn" data-days="30" onclick="selectDays(30)">30d</button>
+        </div>
+    </div>
+
+    <div class="hm-charts" id="charts-section">
+
+        <!-- GRÁFICO 3: Tensão OS (CPU vs Memória) -->
+        <div class="chart-card">
+            <div>
+                <div class="chart-card-title">
+                    <span class="icon">⚙️</span>
+                    Tensão do Sistema Operacional (Picos Diários)
+                </div>
+                <div class="chart-card-desc" id="chart-os-desc">Curva de pico diário de CPU (%) e Memória (%) · health_diario_picos</div>
+            </div>
+            <div class="chart-wrap" id="wrap-chart-os">
+                <canvas id="chart-os"></canvas>
+            </div>
+        </div>
+
+        <!-- GRÁFICO 4: Carga Concorrente (DB vs Airflow) -->
+        <div class="chart-card">
+            <div>
+                <div class="chart-card-title" id="chart-srv-sql-beta">
+                    <span class="icon">📊</span>
+                    Carga Concorrente (DB vs Airflow)
+                </div>
+                <div class="chart-card-desc" id="chart-srv-sql-beta">Total somado de conexões DB vs máximo de tasks Airflow por dia (colunas lado a lado)</div>
+            </div>
+            <div class="chart-wrap" id="wrap-chart-srv-sql-beta">
+                <canvas id="chart-srv-sql-beta"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+</div><!-- /#dash-body -->
+
+</div><!-- /.dash -->
+
+<!-- ══════════ JAVASCRIPT MODULAR ══════════ -->
+</div>
+
+<script>
+"use strict";
+
+// ─── Configurações Gerais ──────────────────────────────────────────────────
+const API_BASE     = '/api/dba/health';
+const REPLICA_SUMMARY_URL = '/api/dba/replica/health/summary';
+const REFRESH_MS   = 30_000;
+let currentDays    = 14;
+let servidorAtual  = 'Oquestrador';
+let loadGeneration = 0;
+
+// Instâncias do Chart.js
+let chartLoadIntra = null;
+let chartLoadPeak  = null;
+let chartOS        = null;
+let chartDBFlow    = null;
+let refreshTimer   = null;
+
+// ─── Manipulação de Token JWT ──────────────────────────────────────────────
+function getToken() {
+    return localStorage.getItem('access_token') || '';
+}
+
+function authHeaders() {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+}
+
+// ─── Wrapper Assíncrono de API ──────────────────────────────────────────────
+async function apiFetch(path) {
+    const resp = await /* fetch( */ null; // path, { headers: authHeaders() });
+    if (resp.status === 401) {
+        
+        return null;
+    }
+    if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Erro HTTP ${resp.status}`);
+    }
+    return resp.json();
+}
+
+// ─── Formatadores e Helpers Visuais ─────────────────────────────────────────
+const fmt = (v, unit = '') =>
+    v == null || isNaN(v) ? '—' : `${parseFloat(v).toFixed(1)}${unit}`;
+
+const fmtInt = (v) =>
+    v == null || isNaN(v) ? '0' : parseInt(v, 10).toLocaleString('pt-BR');
+
+function fmtDbSize(mb) {
+    if (mb == null || mb === '' || isNaN(parseFloat(mb))) return '—';
+    const n = parseFloat(mb);
+    if (Math.abs(n) >= 1024) return `${(n / 1024).toFixed(2)} GB`;
+    return `${n.toFixed(1)} MB`;
+}
+
+function progressClass(pct) {
+    if (pct > 85) return 'danger';
+    if (pct > 70) return 'warn';
+    return '';
+}
+
+function valueClass(pct) {
+    if (pct > 85) return 'danger';
+    if (pct > 70) return 'warn';
+    return 'ok';
+}
+
+function badgeStatus(val) {
+    if (!val) return `<span class="svc-badge unknown"><span class="dot"></span>N/D</span>`;
+    const str = String(val).toLowerCase();
+    const ok = ['ok', 'running', 'healthy', 'true', '1', 'ativo'].includes(str);
+    return ok
+        ? `<span class="svc-badge ok"><span class="dot"></span>ONLINE</span>`
+        : `<span class="svc-badge err"><span class="dot"></span>${val.toUpperCase()}</span>`;
+}
+
+function progressBar(pct) {
+    const safe = Math.min(Math.max(parseFloat(pct) || 0, 0), 100);
+    const cls  = progressClass(safe);
+    return `
+        <div class="progress-track">
+            <div class="progress-fill ${cls}" style="width:${safe}%"></div>
+        </div>`;
+}
+
+function metricRow(label, value, pct, subdetail = '') {
+    const cls = pct != null ? valueClass(pct) : '';
+    return `
+        <div class="metric-row">
+            <div class="metric-label-row">
+                <span class="metric-label">${label}</span>
+                <div class="metric-value-box">
+                    ${subdetail ? `<span class="metric-subdetail">${subdetail}</span>` : ''}
+                    <span class="metric-value ${cls}">${value}</span>
+                </div>
+            </div>
+            ${pct != null ? progressBar(pct) : ''}
+        </div>`;
+}
+
+// ─── 1. Renderizador da Camada OS (Oquestrador) ─────────────────────────────────
+function renderOS(os, bodyId = 'os-body') {
+    const cpu      = parseFloat(os.cpu_uso ?? os.cpu ?? 0);
+    const memPct   = parseFloat(os.mem_uso_percent ?? os.mem_percent ?? 0);
+
+    // Memória RAM com informação explícita de Memória Livre
+    const memUsada = os.mem_usada_gb != null ? `${os.mem_usada_gb} GB` : null;
+    const memTotal = os.mem_total_gb != null ? `${os.mem_total_gb} GB` : null;
+    const memLivre = os.mem_livre_gb != null ? `${os.mem_livre_gb} GB` : null;
+    let memSub = '';
+    if (memUsada && memTotal) {
+        memSub = `${memUsada} / ${memTotal} (Livre: ${memLivre || '—'})`;
+    } else if (memLivre) {
+        memSub = `Livre: ${memLivre}`;
+    }
+
+    // Disco Principal
+    const discoPct   = parseFloat(os.disco_uso_percent ?? os.disk_uso_percent ?? 0);
+    const discoLivre = os.disco_livre_gb != null ? `${os.disco_livre_gb} GB` : null;
+    const discoTotal = os.disco_total_gb != null ? `${os.disco_total_gb} GB` : null;
+    const discoSub   = discoLivre ? `Livre: ${discoLivre}` : (discoTotal ? `Total: ${discoTotal}` : '');
+
+    // Disco /dbdir (Partição dedicada às bases de dados)
+    const dbdirPct   = parseFloat(os.dbdir_uso_percent ?? os.disco_dbdir_uso_percent ?? os.disco_uso_percent ?? 0);
+    const dbdirLivre = os.dbdir_livre_gb != null ? `${os.dbdir_livre_gb} GB` : (discoLivre || null);
+    const dbdirTotal = os.dbdir_total_gb != null ? `${os.dbdir_total_gb} GB` : (discoTotal || null);
+    const dbdirSub   = dbdirLivre ? `Livre: ${dbdirLivre}` : (dbdirTotal ? `Total: ${dbdirTotal}` : '');
+
+    // Load Average (1m, 5m, 15m) — com mapeamento prioritário dos campos reais
+    const l1_val  = os.load_1min ?? os.load_1m ?? os.load_avg_1m ?? os.load1;
+    const l5_val  = os.load_5min ?? os.load_5m ?? os.load_avg_5m ?? os.load5;
+    const l15_val = os.load_15min ?? os.load_15m ?? os.load_avg_15m ?? os.load15;
+
+    const l1  = l1_val != null && !isNaN(l1_val) ? parseFloat(l1_val).toFixed(2) : '—';
+    const l5  = l5_val != null && !isNaN(l5_val) ? parseFloat(l5_val).toFixed(2) : '—';
+    const l15 = l15_val != null && !isNaN(l15_val) ? parseFloat(l15_val).toFixed(2) : '—';
+
+    // Swap e Thrashing
+    const swapMb    = parseFloat(os.swap_usado_mb ?? os.swap_usado ?? 0);
+    const isThrash  = Boolean(os.is_thrashing || (swapMb > 0 && memPct > 85));
+    const swapLabel = swapMb > 0 ? `${swapMb} MB Usado` : '0 MB (Inativo)';
+    const swapBadge = isThrash
+        ? `<span class="swap-status-badge danger">⚠️ Thrashing Ativo</span>`
+        : `<span class="swap-status-badge ok">Normal</span>`;
+
+    document.getElementById(bodyId).innerHTML = `
+        ${metricRow('CPU', fmt(cpu, '%'), cpu)}
+        ${metricRow('Memória RAM', fmt(memPct, '%'), memPct, memSub)}
+        ${metricRow('Disco Principal', fmt(discoPct, '%'), discoPct, discoSub)}
+        ${metricRow('Disco /dbdir', fmt(dbdirPct, '%'), dbdirPct, dbdirSub)}
+
+        <!-- Grid Load Average -->
+        <div class="load-avg-grid">
+            <div class="load-avg-item">
+                <span class="load-avg-label">Load 1m</span>
+                <span class="load-avg-val">${l1}</span>
+            </div>
+            <div class="load-avg-item">
+                <span class="load-avg-label">Load 5m</span>
+                <span class="load-avg-val">${l5}</span>
+            </div>
+            <div class="load-avg-item">
+                <span class="load-avg-label">Load 15m</span>
+                <span class="load-avg-val">${l15}</span>
+            </div>
+        </div>
+
+        <!-- Swap & Thrashing Widget -->
+        <div class="swap-status-box">
+            <span style="color:var(--muted);font-weight:600;">Memória Swap: <b style="color:var(--white);font-family:monospace;">${swapLabel}</b></span>
+            ${swapBadge}
+        </div>
+    `;
+}
+
+// ─── 2. Renderizador da Camada Airflow ───────────────────────────────────────
+function renderAirflow(af) {
+    const ws    = af.webserver_status  ?? null;
+    const sched = af.scheduler_status ?? null;
+
+    // Heartbeat Lag
+    const lagMin = parseFloat(af.scheduler_lag_minutos ?? 0);
+    let lagCls = 'ok';
+    let lagBadge = '';
+    if (lagMin > 3.0) {
+        lagCls = 'danger';
+        lagBadge = `<span style="font-size:8px;background:rgba(255,85,85,0.2);color:#ff5555;padding:2px 6px;border-radius:4px;font-weight:700;">🚨 SEM HEARTBEAT</span>`;
+    } else if (lagMin > 1.5) {
+        lagCls = 'warn';
+    }
+
+    // Funil de Tasks
+    const funnel   = af.tasks_funnel || {};
+    const tRunning = fmtInt(funnel.running ?? af.tasks_running);
+    const tSuccess = fmtInt(funnel.success ?? af.tasks_success);
+    const tFailed  = fmtInt(funnel.failed  ?? af.tasks_failed);
+    const rate     = funnel.success_rate != null ? parseFloat(funnel.success_rate) : null;
+    const rateCls  = (rate != null && rate < 95.0) ? 'color:#ff5555;' : 'color:#00e076;';
+
+    // Box Colapsável de Erro do Airflow
+    const ultimoErro = af.ultimo_erro ?? af.last_error ?? null;
+    let errorBox = '';
+    if (ultimoErro && String(ultimoErro).trim() !== '') {
+        errorBox = `
+            <div class="error-collapsible">
+                <div class="error-toggle-btn" onclick="toggleCollapse('err-airflow')">
+                    <span>⚠️ Último Erro Registrado (Airflow)</span>
+                    <span id="arrow-err-airflow">▼</span>
+                </div>
+                <div class="error-details-box" id="err-airflow">${ultimoErro}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById('airflow-body').innerHTML = `
+        <div class="svc-grid">
+            <div class="svc-item">
+                <span class="svc-name">Webserver</span>
+                ${badgeStatus(ws)}
+            </div>
+            <div class="svc-item">
+                <span class="svc-name">Scheduler</span>
+                ${badgeStatus(sched)}
+            </div>
+        </div>
+
+        <div class="lag-container">
+            <span class="lag-label">Heartbeat Lag:</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+                ${lagBadge}
+                <span class="lag-value ${lagCls}">${lagMin.toFixed(1)} min</span>
+            </div>
+        </div>
+
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span class="metric-label">Funil de Tasks</span>
+                ${rate != null ? `<span style="font-size:9px;font-weight:800;${rateCls}">Taxa Sucesso: ${rate.toFixed(1)}%</span>` : ''}
+            </div>
+            <div class="tasks-funnel-grid">
+                <div class="funnel-card">
+                    <span class="funnel-num running">${tRunning}</span>
+                    <span class="funnel-label">Running</span>
+                </div>
+                <div class="funnel-card">
+                    <span class="funnel-num success">${tSuccess}</span>
+                    <span class="funnel-label">Success</span>
+                </div>
+                <div class="funnel-card">
+                    <span class="funnel-num failed">${tFailed}</span>
+                    <span class="funnel-label">Failed</span>
+                </div>
+            </div>
+        </div>
+
+        ${errorBox}
+    `;
+}
+
+// ─── 3. Renderizador da Camada Databases ─────────────────────────────────────
+function renderDatabases(dbData, bodyId = 'srv-sql-beta', badgeId = 'srv-sql-beta') {
+    const instances = Array.isArray(dbData.instances) && dbData.instances.length > 0
+        ? dbData.instances
+        : (dbData.instancia || dbData.conexoes_ativas != null ? [dbData] : []);
+
+    const countBadge = document.getElementById(badgeId);
+    if (countBadge) {
+        countBadge.textContent = `${instances.length} ${instances.length === 1 ? 'INSTÂNCIA' : 'INSTÂNCIAS'}`;
+    }
+
+    if (instances.length === 0) {
+        document.getElementById(bodyId).innerHTML = `
+            <div class="hm-error">Nenhuma telemetria de banco encontrada no momento.</div>
+        `;
+        return;
+    }
+
+    const cardsHtml = instances.map((inst, idx) => {
+        const nome      = inst.instancia || inst.host || inst.banco || inst.servidor || `Instância #${idx + 1}`;
+        const tempo     = parseFloat(inst.tempo_resposta_ms ?? 0);
+        const conns     = fmtInt(inst.conexoes_ativas);
+        const connsMax  = inst.conexoes_max ? ` / ${inst.conexoes_max}` : '';
+        const tamStr    = inst.tamanho_mb != null
+            ? fmtDbSize(inst.tamanho_mb)
+            : (inst.tamanho_gb ? `${inst.tamanho_gb} GB` : '—');
+
+        const bases = Array.isArray(inst.databases_internos) ? inst.databases_internos : [];
+
+        // Cores de latência: <20ms verde, 20-100ms amarelo, >100ms vermelho
+        let latClass = 'lat-excelente';
+        let latLabel = 'Excelente';
+        if (tempo > 100.0) {
+            latClass = 'lat-critico';
+            latLabel = 'Crítico';
+        } else if (tempo >= 20.0) {
+            latClass = 'lat-alerta';
+            latLabel = 'Atenção';
+        }
+
+        const erro = inst.ultimo_erro ?? null;
+        let errSnippet = '';
+        if (erro && String(erro).trim() !== '') {
+            const errId = `srv-sql-beta-${bodyId}-${idx}`;
+            errSnippet = `
+                <div class="error-collapsible" style="margin-top:4px;">
+                    <div class="error-toggle-btn" onclick="toggleCollapse('${errId}')">
+                        <span>⚠️ Erro na Instância</span>
+                        <span id="arrow-${errId}">▼</span>
+                    </div>
+                    <div class="error-details-box" id="${errId}">${erro}</div>
+                </div>
+            `;
+        }
+
+        let basesHtml = '';
+        if (bases.length > 0) {
+            const rows = bases.map((b) => {
+                const dbNome = b.db_nome || '—';
+                const dbSize = fmtDbSize(b.tamanho_mb != null ? b.tamanho_mb : b.tamanho_gb != null ? b.tamanho_gb * 1024 : null);
+                const dbConns = (b.conexoes_ativas != null && b.conexoes_ativas !== '') ? fmtInt(b.conexoes_ativas) : '—';
+                const dbLat = (b.tempo_resposta_ms != null && b.tempo_resposta_ms !== '')
+                    ? `${parseFloat(b.tempo_resposta_ms).toFixed(1)} ms`
+                    : '—';
+                return `
+                    <tr>
+                        <td class="srv-sql-beta">${dbNome}</td>
+                        <td class="srv-sql-beta">${dbSize}</td>
+                        <td>${dbConns}</td>
+                        <td>${dbLat}</td>
+                    </tr>
+                `;
+            }).join('');
+            basesHtml = `
+                <div class="srv-sql-beta">
+                    <div class="srv-sql-beta">
+                        <span>Bases Monitoradas</span>
+                        <span class="srv-sql-beta">${bases.length} ${bases.length === 1 ? 'base' : 'bases'}</span>
+                    </div>
+                    <table class="srv-sql-beta">
+                        <thead>
+                            <tr>
+                                <th>Database</th>
+                                <th>Tamanho</th>
+                                <th>Conexões</th>
+                                <th>Latência</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="srv-sql-beta">
+                <div class="srv-sql-beta">
+                    <div class="srv-sql-beta">
+                        <span style="color:var(--lime);">●</span>
+                        ${nome}
+                    </div>
+                    <span class="lat-badge ${latClass}">${tempo.toFixed(1)} ms · ${latLabel}</span>
+                </div>
+                <div class="srv-sql-beta">
+                    <div class="srv-sql-beta">
+                        <span class="srv-sql-beta">Conexões</span>
+                        <span class="srv-sql-beta" style="color:var(--lime);">${conns}${connsMax}</span>
+                    </div>
+                    <div class="srv-sql-beta">
+                        <span class="srv-sql-beta">Latência</span>
+                        <span class="srv-sql-beta">${tempo.toFixed(1)} ms</span>
+                    </div>
+                    <div class="srv-sql-beta">
+                        <span class="srv-sql-beta">Tamanho Total</span>
+                        <span class="srv-sql-beta" style="color:var(--tbl-text);">${tamStr}</span>
+                    </div>
+                </div>
+                ${basesHtml}
+                ${errSnippet}
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById(bodyId).innerHTML = `
+        <div class="srv-sql-beta">
+            ${cardsHtml}
+        </div>
+    `;
+}
+
+function toggleCollapse(id) {
+    const box = document.getElementById(id);
+    const arrow = document.getElementById(`arrow-${id}`);
+    if (box) {
+        const isOpen = box.classList.toggle('active');
+        if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+    }
+}
+
+// ─── Carregamento de Estado Corrente ─────────────────────────────────────────
+function setSwitching(on) {
+    const body = document.getElementById('dash-body');
+    if (body) body.classList.toggle('is-switching', Boolean(on));
+}
+
+function showCardSkeletons() {
+    ['os-body', 'airflow-body', 'srv-sql-beta'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = `<div class="skeleton" style="height:140px;"></div>`;
+    });
+}
+
+function restoreChartCanvas(wrapId, canvasId) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    if (!document.getElementById(canvasId)) {
+        wrap.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+        if (canvasId === 'chart-load-intraday') chartLoadIntra = null;
+        if (canvasId === 'chart-load-peaks') chartLoadPeak = null;
+        if (canvasId === 'chart-os') chartOS = null;
+        if (canvasId === 'chart-srv-sql-beta') {
+            if (chartDBFlow) {
+                try { chartDBFlow.destroy(); } catch (_) { /* ignore */ }
+            }
+            chartDBFlow = null;
+        }
+    }
+}
+
+function restoreAllChartCanvases() {
+    restoreChartCanvas('wrap-chart-load-intraday', 'chart-load-intraday');
+    restoreChartCanvas('wrap-chart-load-peaks', 'chart-load-peaks');
+    restoreChartCanvas('wrap-chart-os', 'chart-os');
+    restoreChartCanvas('wrap-chart-srv-sql-beta', 'chart-srv-sql-beta');
+}
+
+function applyServidorChrome() {
+    const isCal = servidorAtual === 'Data Lake';
+    const title = document.getElementById('page-title');
+    const sub = document.getElementById('page-subtitle');
+    const statusAccent = document.getElementById('section-status-accent');
+    const peaksAccent = document.getElementById('section-peaks-accent');
+    const dbTitle = document.getElementById('chart-srv-sql-beta');
+    const dbDesc = document.getElementById('chart-srv-sql-beta');
+    const osDesc = document.getElementById('chart-os-desc');
+
+    if (title) title.textContent = `HEALTH MONITOR — ${servidorAtual}`;
+    if (sub) {
+        sub.textContent = isCal
+            ? 'Observabilidade Data Lake · OS · Instâncias de Banco · replica_unificada_etl06'
+            : 'Observabilidade em Tempo Real · OS · Airflow · Instâncias de Banco de Dados';
+    }
+    if (statusAccent) statusAccent.textContent = `— Máquina ${servidorAtual}`;
+    if (peaksAccent) peaksAccent.textContent = isCal ? '— Picos Diários Data Lake' : '— Picos Diários';
+    if (osDesc) {
+        osDesc.textContent = isCal
+            ? 'Curva de pico diário de CPU (%) e Memória (%) · health_diario_picos (replica_unificada_etl06)'
+            : 'Curva de pico diário de CPU (%) e Memória (%) · health_diario_picos';
+    }
+    if (dbTitle) {
+        dbTitle.innerHTML = isCal
+            ? `<span class="icon">📊</span> Conexões Consolidadas (Picos Diários)`
+            : `<span class="icon">📊</span> Carga Concorrente (DB vs Airflow)`;
+    }
+    if (dbDesc) {
+        dbDesc.textContent = isCal
+            ? 'Soma das conexões ativas de todas as bases por dia · health_db_diario_picos'
+            : 'Total somado de conexões DB vs máximo de tasks Airflow por dia (colunas lado a lado)';
+    }
+
+    document.querySelectorAll('.hm-server-btn').forEach((b) => {
+        const on = b.dataset.server === servidorAtual;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+}
+
+function renderAirflowUnavailable() {
+    const el = document.getElementById('airflow-body');
+    if (!el) return;
+    el.innerHTML = `
+        <div class="hm-error muted">
+            Airflow não é coletado neste host (Data Lake).
+        </div>`;
+}
+
+function selectServidor(nome) {
+    if (nome !== 'Oquestrador' && nome !== 'Data Lake') return;
+    servidorAtual = nome;
+    applyServidorChrome();
+    loadAll();
+}
+
+async function fetchReplicaSummary(days) {
+    const paths = [
+        `${REPLICA_SUMMARY_URL}?days=${days}`,
+        `${API_BASE}/replica/summary?days=${days}`,
+    ];
+    let lastErr = null;
+    for (const path of paths) {
+        try {
+            return await apiFetch(path);
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+    throw lastErr || new Error('Falha ao consultar a réplica unificada');
+}
+
+function parseIntradayPayload(data) {
+    let itens = [];
+    if (Array.isArray(data)) {
+        itens = data;
+    } else if (Array.isArray(data?.dados)) {
+        itens = data.dados;
+    } else if (Array.isArray(data?.items)) {
+        itens = data.items;
+    } else if (Array.isArray(data?.labels) && data.labels.length > 0) {
+        const lbls = data.labels;
+        const crgs = data.series?.carga || data.series?.max_load_1min || [];
+        itens = lbls.map((h, i) => ({ hora: h, carga: crgs[i] }));
+    }
+    return itens;
+}
+
+function renderIntradayFromPayload(data, wrap) {
+    const itens = parseIntradayPayload(data);
+    if (!itens || itens.length === 0) {
+        if (wrap) {
+            wrap.innerHTML = `<div class="hm-error" style="height:100%;display:flex;align-items:center;justify-content:center;">Nenhum dado de load registrado para o período</div>`;
+        }
+        return;
+    }
+    restoreChartCanvas('wrap-chart-load-intraday', 'chart-load-intraday');
+    const labels = itens.map((it) => it.hora || it.hora_intervalo || '');
+    const cargas = itens.map((it) => (it.carga != null ? it.carga : (it.max_load_1min != null ? it.max_load_1min : null)));
+    buildOrUpdateChartLoadIntra(labels, cargas);
+}
+
+async function loadCurrent(gen) {
+    setLive('loading');
+    try {
+        const data = await apiFetch(`${API_BASE}/current`);
+        if (!data || gen !== loadGeneration) return;
+
+        renderOS(data.os || {});
+        renderAirflow(data.airflow || {});
+        renderDatabases(data.databases || {});
+
+        const ts = data.coletado_em
+            ? new Date(data.coletado_em).toLocaleTimeString('pt-BR')
+            : new Date().toLocaleTimeString('pt-BR');
+        document.getElementById('last-read').textContent = ts;
+        setLive('ok');
+    } catch (e) {
+        if (gen !== loadGeneration) return;
+        setLive('err');
+        ['os-body', 'airflow-body', 'srv-sql-beta'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<div class="hm-error">⚠ ${e.message}</div>`;
+        });
+    }
+}
+
+async function loadData Lake(gen, days) {
+    setLive('loading');
+    try {
+        const data = await fetchReplicaSummary(days);
+        if (!data || gen !== loadGeneration) return;
+
+        renderOS(data.os || {});
+        renderAirflowUnavailable();
+        renderDatabases(data.databases || {});
+
+        restoreAllChartCanvases();
+
+        const intra = data.intraday_load || {};
+        renderIntradayFromPayload(intra, document.getElementById('wrap-chart-load-intraday'));
+
+        const osP = data.os_peaks || {};
+        const osSeries = osP.series || {};
+        const labels = osP.labels || [];
+        buildOrUpdateChartLoadPeak(labels, osSeries.max_load || []);
+        buildOrUpdateChartOS(labels, osSeries.max_cpu_uso || [], osSeries.max_mem_uso_percent || []);
+
+        const dbP = data.db_peaks || {};
+        buildOrUpdateChartDBFlow(
+            dbP.labels || labels,
+            dbP.series?.max_conexoes_ativas || [],
+            []
+        );
+
+        const ts = data.coletado_em
+            ? new Date(data.coletado_em).toLocaleTimeString('pt-BR')
+            : new Date().toLocaleTimeString('pt-BR');
+        document.getElementById('last-read').textContent = ts;
+        setLive('ok');
+    } catch (e) {
+        if (gen !== loadGeneration) return;
+        setLive('err');
+        ['os-body', 'airflow-body', 'srv-sql-beta'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<div class="hm-error">⚠ ${e.message}</div>`;
+        });
+        ['wrap-chart-load-intraday', 'wrap-chart-load-peaks', 'wrap-chart-os', 'wrap-chart-srv-sql-beta'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = `<div class="hm-error" style="height:100%;display:flex;align-items:center;justify-content:center;">⚠ ${e.message}</div>`;
+            }
+        });
+        chartLoadIntra = null;
+        chartLoadPeak = null;
+        chartOS = null;
+        chartDBFlow = null;
+    }
+}
+
+function setLive(state) {
+    const dot   = document.getElementById('live-dot');
+    const label = document.getElementById('live-label');
+    if (!dot || !label) return;
+    dot.className = 'status-dot';
+    if (state === 'ok') {
+        dot.classList.add('dot-green');
+        label.textContent = 'Sistema Online & Monitorado';
+        label.style.color = 'var(--white)';
+    } else if (state === 'err') {
+        dot.style.background = '#ff5555';
+        dot.style.boxShadow  = '0 0 8px #ff5555';
+        label.textContent = 'Erro de Comunicação';
+        label.style.color = '#ff5555';
+    } else {
+        dot.classList.add('dot-blue');
+        label.textContent = 'Atualizando Telemetria…';
+        label.style.color = 'var(--muted)';
+    }
+}
+
+// ─── Configurações Padrão do Chart.js ─────────────────────────────────────────
+Chart.defaults.color            = '#888888';
+Chart.defaults.borderColor      = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family      = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size        = 10;
+Chart.defaults.plugins.legend.labels.boxWidth  = 10;
+Chart.defaults.plugins.legend.labels.padding   = 14;
+Chart.defaults.plugins.tooltip.backgroundColor = '#1e1e1e';
+Chart.defaults.plugins.tooltip.borderColor     = 'rgba(204,255,0,0.25)';
+Chart.defaults.plugins.tooltip.borderWidth     = 1;
+Chart.defaults.plugins.tooltip.padding         = 10;
+Chart.defaults.plugins.tooltip.titleFont       = { weight: '700', size: 11 };
+
+const LIME = '#CCFF00';
+
+// ─── Gráfico 1: Intraday Horário de Load 1m (Hoje) ───────────────────────────
+function buildOrUpdateChartLoadIntra(labels, maxLoad1mData) {
+    const canvas = document.getElementById('chart-load-intraday');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cfg = {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Max Load 1m (Kernel)',
+                    data: maxLoad1mData,
+                    borderColor: LIME,
+                    backgroundColor: 'rgba(204,255,0,0.12)',
+                    borderWidth: 2.2,
+                    pointBackgroundColor: LIME,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    tension: 0.35,
+                    fill: true,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { maxTicksLimit: 12 } 
+                },
+                y: {
+                    min: 0,
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { precision: 2 },
+                },
+            },
+            plugins: { 
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `Max Load 1m: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) : '—'}`
+                    }
+                }
+            },
+            animation: { duration: 500 },
+        },
+    };
+
+    if (chartLoadIntra) {
+        chartLoadIntra.data.labels = labels;
+        chartLoadIntra.data.datasets[0].data = maxLoad1mData;
+        chartLoadIntra.update();
+    } else {
+        chartLoadIntra = new Chart(ctx, cfg);
+    }
+}
+
+// ─── Gráfico 2: Tendência Histórica de Picos de Load ───────────────────────────
+function buildOrUpdateChartLoadPeak(labels, loadPeaks) {
+    const canvas = document.getElementById('chart-load-peaks');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cfg = {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Pico Máx Load (Kernel)',
+                    data: loadPeaks,
+                    borderColor: LIME,
+                    backgroundColor: 'rgba(204,255,0,0.12)',
+                    borderWidth: 2.2,
+                    pointBackgroundColor: LIME,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    tension: 0.35,
+                    fill: true,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+                y: {
+                    min: 0,
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { precision: 2 },
+                },
+            },
+            plugins: { legend: { position: 'top' } },
+            animation: { duration: 500 },
+        },
+    };
+
+    if (chartLoadPeak) {
+        chartLoadPeak.data.labels = labels;
+        chartLoadPeak.data.datasets[0].data = loadPeaks;
+        chartLoadPeak.update();
+    } else {
+        chartLoadPeak = new Chart(ctx, cfg);
+    }
+}
+
+// ─── Gráfico 3: Tensão OS (CPU vs Memória) ──────────────────────────────────
+function buildOrUpdateChartOS(labels, cpuData, memData) {
+    const canvas = document.getElementById('chart-os');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cfg = {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Max CPU (%)',
+                    data: cpuData,
+                    borderColor: LIME,
+                    backgroundColor: 'rgba(204,255,0,0.06)',
+                    borderWidth: 2,
+                    pointBackgroundColor: LIME,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    tension: 0.35,
+                    fill: true,
+                },
+                {
+                    label: 'Max Memória (%)',
+                    data: memData,
+                    borderColor: '#0096FF',
+                    backgroundColor: 'rgba(0,150,255,0.06)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#0096FF',
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    tension: 0.35,
+                    fill: true,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+                y: {
+                    min: 0,
+                    max: 100,
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { callback: v => `${v}%` },
+                },
+            },
+            plugins: { legend: { position: 'top' } },
+            animation: { duration: 500 },
+        },
+    };
+
+    if (chartOS) {
+        chartOS.data.labels = labels;
+        chartOS.data.datasets[0].data = cpuData;
+        chartOS.data.datasets[1].data = memData;
+        chartOS.update();
+    } else {
+        chartOS = new Chart(ctx, cfg);
+    }
+}
+
+// ─── Gráfico 4: Carga Concorrente DB vs Airflow ──────────────────────────────
+function buildOrUpdateChartDBFlow(labels, dbData, flowData) {
+    const canvas = document.getElementById('chart-srv-sql-beta');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const datasets = [
+        {
+            label: 'Total Conexões DB',
+            data: dbData,
+            backgroundColor: 'rgba(204,255,0,0.6)',
+            borderColor: LIME,
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false,
+            grouped: true,
+        },
+    ];
+    const hasFlow = Array.isArray(flowData) && flowData.some((v) => v != null);
+    if (hasFlow) {
+        datasets.push({
+            label: 'Max Tasks Airflow',
+            data: flowData,
+            backgroundColor: 'rgba(255,107,107,0.6)',
+            borderColor: '#ff6b6b',
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false,
+            grouped: true,
+        });
+    }
+    const cfg = {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    stacked: false,
+                    grid: { display: false },
+                    ticks: { maxTicksLimit: 8 },
+                },
+                y: {
+                    stacked: false,
+                    min: 0,
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { precision: 0 },
+                },
+            },
+            plugins: { legend: { position: 'top' } },
+            animation: { duration: 500 },
+        },
+    };
+
+    if (chartDBFlow) {
+        chartDBFlow.destroy();
+        chartDBFlow = null;
+    }
+    chartDBFlow = new Chart(ctx, cfg);
+}
+
+// ─── Carregamento do Intraday Load (Hoje) ───────────────────────────────────
+async function loadIntradayLoad(gen) {
+    const wrap = document.getElementById('wrap-chart-load-intraday');
+    try {
+        const data = await apiFetch(`${API_BASE}/intraday-load`);
+        if (!data || gen !== loadGeneration) return;
+        renderIntradayFromPayload(data, wrap);
+    } catch (e) {
+        if (gen !== loadGeneration) return;
+        console.error("Falha ao carregar intraday load:", e);
+        if (wrap) {
+            wrap.innerHTML = `<div class="hm-error" style="height:100%;display:flex;align-items:center;justify-content:center;">⚠ Falha ao carregar dados de load: ${e.message}</div>`;
+        }
+        chartLoadIntra = null;
+    }
+}
+
+async function loadPeaks(days, gen) {
+    try {
+        const data = await apiFetch(`${API_BASE}/peaks?days=${days}`);
+        if (!data || gen !== loadGeneration) return;
+
+        restoreChartCanvas('wrap-chart-load-peaks', 'chart-load-peaks');
+        restoreChartCanvas('wrap-chart-os', 'chart-os');
+        restoreChartCanvas('wrap-chart-srv-sql-beta', 'chart-srv-sql-beta');
+
+        const osP = data.os_peaks || {};
+        const labels = osP.labels || [];
+        const osSeries = osP.series || {};
+
+        buildOrUpdateChartLoadPeak(labels, osSeries.max_load || []);
+        buildOrUpdateChartOS(labels, osSeries.max_cpu_uso || [], osSeries.max_mem_uso_percent || []);
+
+        const dbP = data.db_peaks || {};
+        const afP = data.airflow_peaks || {};
+        const mergedLabels = dbP.labels || afP.labels || labels;
+        buildOrUpdateChartDBFlow(
+            mergedLabels,
+            dbP.series?.max_conexoes_ativas || [],
+            afP.series?.max_tasks_running || []
+        );
+    } catch (e) {
+        if (gen !== loadGeneration) return;
+        ['wrap-chart-load-peaks', 'wrap-chart-os', 'wrap-chart-srv-sql-beta'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = `<div class="hm-error" style="height:100%;display:flex;align-items:center;justify-content:center;">⚠ Falha ao carregar tendências históricas: ${e.message}</div>`;
+            }
+        });
+        chartLoadPeak = null;
+        chartOS = null;
+        chartDBFlow = null;
+    }
+}
+
+function selectDays(d) {
+    currentDays = d;
+    document.querySelectorAll('.day-btn').forEach((b) => {
+        b.classList.toggle('active', parseInt(b.dataset.days, 10) === d);
+    });
+    loadAll();
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+}
+
+async function loadAll() {
+    const gen = ++loadGeneration;
+    applyServidorChrome();
+    showCardSkeletons();
+    restoreAllChartCanvases();
+    setSwitching(true);
+    try {
+        if (servidorAtual === 'Data Lake') {
+            await loadData Lake(gen, currentDays);
+        } else {
+            await Promise.all([
+                loadCurrent(gen),
+                loadIntradayLoad(gen),
+                loadPeaks(currentDays, gen),
+            ]);
+        }
+    } finally {
+        if (gen === loadGeneration) setSwitching(false);
+    }
+}
+
+(function init() {
+    if (localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-mode');
+    }
+
+    if (!getToken()) {
+        
+        return;
+    }
+
+    applyServidorChrome();
+    loadAll();
+    refreshTimer = setInterval(loadAll, REFRESH_MS);
+})();
+</script>
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: health.html -->
+    <script>
+        function runFinalMock_health() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('health.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('health.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('health.html'.includes('ticket') || 'health.html'.includes('redmine') || 'health.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_health();
+        setInterval(runFinalMock_health, 5000);
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Tickets Unificada — Empresa Fictícia S/A</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ── KPI CARDS ─────────────────────────────────────────── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        .stat-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 18px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.4); }
+        .stat-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--lime); border-radius: 10px 10px 0 0;
+        }
+        .stat-card.card-danger::before { background: #ff5555; }
+        .stat-card.card-blue::before   { background: #0096FF; }
+        .stat-card.card-warn::before   { background: #f0c309; }
+        .stat-card.card-purple::before { background: #a855f7; }
+        .stat-value { font-size: 26px; font-weight: 800; color: var(--lime); margin: 6px 0 2px; }
+        .stat-card.card-danger .stat-value { color: #ff5555; }
+        .stat-card.card-blue   .stat-value { color: #0096FF; }
+        .stat-card.card-warn   .stat-value { color: #f0c309; }
+        .stat-card.card-purple .stat-value { color: #a855f7; }
+        .stat-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
+        .stat-sub   { font-size: 10px; color: #aaa; margin-top: 4px; line-height: 1.3; }
+
+        /* ── FILTER BAR ─────────────────────────────────────────── */
+        .filter-bar {
+            background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+            padding: 13px 18px; margin-bottom: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-group label { font-size: 11px; color: #ccc; font-weight: 700; }
+        .filter-group input {
+            padding: 7px 11px; border: 1px solid var(--border);
+            border-radius: 6px; background: var(--bg2); color: #fff; font-size: 12px;
+        }
+        .btn-filter {
+            padding: 7px 16px; background: var(--lime); color: #000;
+            border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px;
+            transition: opacity 0.2s;
+        }
+        .btn-filter:hover { opacity: 0.85; }
+        .btn-clear {
+            padding: 7px 13px; background: #444; color: #fff;
+            border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+
+        /* ── SECTION TITLE ──────────────────────────────────────── */
+        .section-title {
+            font-size: 14px; font-weight: 700; color: #ddd; margin: 24px 0 11px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-title::before {
+            content: ''; width: 4px; height: 18px;
+            background: var(--lime); border-radius: 2px; flex-shrink: 0;
+        }
+
+        /* ── ORIGEM BADGES ──────────────────────────────────────── */
+        .origem-badge {
+            display: inline-block; padding: 2px 7px; border-radius: 10px;
+            font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .origem-redmine { background: rgba(0,150,255,0.15); color: #0096FF; border: 1px solid rgba(0,150,255,0.3); }
+        .origem-bitrix  { background: rgba(0,224,118,0.15); color: #00e076; border: 1px solid rgba(0,224,118,0.3); }
+
+        /* ── MAIN TABLES ────────────────────────────────────────── */
+        .table-unificada { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .table-unificada th {
+            background: var(--bg4); color: #999; padding: 9px 8px; text-align: left;
+            font-weight: 700; font-size: 9px; text-transform: uppercase;
+            border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 1;
+        }
+        .table-unificada td { padding: 8px 8px; border-bottom: 1px solid var(--border); color: #ccc; }
+        .table-unificada tr:hover td { background: var(--bg4); }
+        .empty-message { text-align: center; padding: 36px; color: #777; font-style: italic; }
+
+        /* ── ANALYSIS GRID (2 cols) ─────────────────────────────── */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 0;
+        }
+
+        /* ── RANKING TABLE ──────────────────────────────────────── */
+        .ranking-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .ranking-table th {
+            color: #777; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 7px 8px; border-bottom: 1px solid var(--border); font-weight: 700;
+        }
+        .ranking-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); color: #ccc; font-size: 11px; }
+        .ranking-table tr:last-child td { border-bottom: none; }
+        .ranking-table tr:hover td { background: var(--bg4); }
+        .rank-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; border-radius: 50%;
+            font-size: 9px; font-weight: 800; background: var(--bg4); color: #aaa;
+        }
+        .rank-1 { background: rgba(204,255,0,0.15); color: var(--lime); }
+        .rank-2 { background: rgba(0,150,255,0.15); color: #0096FF; }
+        .rank-3 { background: rgba(168,85,247,0.15); color: #a855f7; }
+
+        /* ── STATUS CHART ───────────────────────────────────────── */
+        .status-chart-container { display: flex; flex-direction: column; gap: 8px; }
+        .status-bar-row { display: flex; align-items: center; gap: 10px; }
+        .status-bar-label { font-size: 10px; color: #ccc; width: 130px; flex-shrink: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        .status-bar-track {
+            flex: 1; height: 18px; background: var(--bg4);
+            border-radius: 4px; overflow: hidden; position: relative;
+        }
+        .status-bar-fill {
+            height: 100%; border-radius: 4px;
+            transition: width 0.6s ease;
+            display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;
+            font-size: 9px; font-weight: 700; color: #000; min-width: 20px;
+        }
+        .status-bar-count { font-size: 10px; color: #999; width: 24px; text-align: right; flex-shrink: 0; }
+
+        /* ── TOP 5 OLDEST ───────────────────────────────────────── */
+        .criticidade-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700;
+        }
+        .crit-alta  { background: rgba(255,85,85,0.15); color: #ff5555; border: 1px solid rgba(255,85,85,0.3); }
+        .crit-media { background: rgba(240,195,9,0.15);  color: #f0c309;  border: 1px solid rgba(240,195,9,0.3);  }
+        .crit-baixa { background: rgba(0,224,118,0.15);  color: #00e076;  border: 1px solid rgba(0,224,118,0.3);  }
+        .dias-badge {
+            display: inline-block; font-size: 12px; font-weight: 800;
+            padding: 2px 6px; border-radius: 6px; min-width: 32px; text-align: center;
+        }
+
+        /* ── TIMELINE ───────────────────────────────────────────── */
+        .timeline-container { display: flex; flex-direction: column; gap: 6px; }
+        .timeline-row { display: flex; align-items: center; gap: 10px; }
+        .timeline-date { font-size: 10px; color: #ccc; width: 80px; flex-shrink: 0; }
+        .timeline-track { flex: 1; height: 20px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+        .timeline-fill-rm {
+            height: 100%; background: rgba(0,150,255,0.5);
+            display: inline-block; transition: width 0.5s ease;
+        }
+        .timeline-fill-bx {
+            height: 100%; background: rgba(0,224,118,0.5);
+            display: inline-block; transition: width 0.5s ease;
+        }
+        .timeline-count { font-size: 10px; color: #ccc; width: 30px; text-align: right; flex-shrink: 0; }
+        .timeline-legend { display: flex; gap: 16px; margin-bottom: 10px; }
+        .tl-leg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #ccc; }
+        .tl-leg-dot { width: 10px; height: 10px; border-radius: 2px; }
+    
+    /* LAYOUT CORRECTIONS INJECTED */
+    .main-content {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    header, .dashboard-header, .app-header, .navbar {
+        position: static !important;
+        width: 100% !important;
+        left: auto !important;
+        margin-left: 0 !important;
+    }
+
+    </style>
+
+    <!-- Injected Sidebar CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #0f172a; /* Slate oscuro do tema mkdocs */
+            color: #f1f5f9;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-header h2 {
+            color: #f8fafc;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .sidebar ul, .sidebar-menu { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .sidebar li a, .sidebar-menu a {
+            display: block;
+            padding: 15px 25px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar li a:hover, .sidebar li a.active, .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #1e293b;
+            color: #06b6d4; /* Cyan de destaque */
+            border-left: 4px solid #06b6d4;
+        }
+    </style>
+    <script src="js/sidebar.js" defer></script>
+</head>
+<body>
+
+    <aside id="sidebar-root" class="sidebar"></aside>
+
+<div class="main-content">
+
+
+<div class="dash">
+    <div class="header">
+        <div class="header-left">
+            <div class="brand-box">Empresa Fictícia S/A</div>
+            <div>
+                <h1>GESTÃO DE TICKETS UNIFICADA</h1>
+                <p>RedMine + Bitrix • Visão Consolidada</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="index.html" class="btn-back">⬅ Voltar ao Portal</a>
+        </div>
+    </div>
+
+    <div class="filter-bar fade-in">
+        <div class="filter-group">
+            <label>Data Inicial:</label>
+            <input type="date" id="dataInicial">
+        </div>
+        <div class="filter-group">
+            <label>Data Final:</label>
+            <input type="date" id="dataFinal">
+        </div>
+        <button class="btn-filter" onclick="aplicarFiltro()">⚡ Aplicar Filtro</button>
+        <button class="btn-clear" onclick="limparFiltro()">Limpar</button>
+        <span id="lastUpdate" style="margin-left:auto;font-size:10px;color:#666;"></span>
+    </div>
+
+    <div class="stats-grid fade-in">
+        <div class="stat-card">
+            <div class="stat-label">Chamados Abertos</div>
+            <div class="stat-value" id="totalAbertos">0</div>
+            <div class="stat-sub" id="abreakdown"></div>
+        </div>
+        <div class="stat-card card-danger">
+            <div class="stat-label">🔴 Críticos (&gt; 7 dias)</div>
+            <div class="stat-value" id="totalCriticos">0</div>
+            <div class="stat-sub">em aberto há mais de 7 dias</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Chamados Encerrados</div>
+            <div class="stat-value" id="totalEncerrados">0</div>
+            <div class="stat-sub" id="ebreakdown"></div>
+        </div>
+        <div class="stat-card card-blue">
+            <div class="stat-label">Taxa de Resolução</div>
+            <div class="stat-value" id="taxaResolucao" class="stat-value">-</div>
+            <div class="stat-sub">encerrados / total</div>
+        </div>
+        <div class="stat-card card-warn">
+            <div class="stat-label">TMT Médio (dias)</div>
+            <div class="stat-value" id="tmtMedio" class="stat-value">-</div>
+            <div class="stat-sub">tempo médio em aberto</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total no Período</div>
+            <div class="stat-value" id="totalPeriodo">0</div>
+            <div class="stat-sub" id="totalBreakdown"></div>
+        </div>
+    </div>
+
+    <div class="section-title">📊 Análise de Desempenho</div>
+    <div class="analysis-grid fade-in">
+
+        <div class="cc">
+            <div class="ct">👤 Ranking por Responsável</div>
+            <div class="tbl-wrap" style="max-height:240px;">
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Analista</th>
+                            <th style="text-align:center;">Abertos</th>
+                            <th style="text-align:center;">Encerrados</th>
+                            <th style="text-align:center;">TMT Médio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-ranking">
+                        <tr><td colspan="5" class="empty-message">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc">
+            <div class="ct">📋 Distribuição por Status (Abertos)</div>
+            <div id="status-chart" style="padding: 8px 0;">
+                <div class="empty-message">Carregando...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="analysis-grid fade-in" style="margin-top:16px;">
+
+        <div class="cc">
+            <div class="ct">⚠️ Top 5 Tickets Mais Antigos</div>
+            <div class="tbl-wrap" style="max-height:240px;">
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>Dias</th>
+                            <th>Criticidade</th>
+                            <th>Origem</th>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Responsável</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-top5">
+                        <tr><td colspan="6" class="empty-message">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cc">
+            <div class="ct">📅 Ritmo de Encerramento por Dia</div>
+            <div class="timeline-legend">
+                <div class="tl-leg-item">
+                    <div class="tl-leg-dot" style="background:rgba(0,150,255,0.6);"></div>
+                    <span>RedMine</span>
+                </div>
+                <div class="tl-leg-item">
+                    <div class="tl-leg-dot" style="background:rgba(0,224,118,0.6);"></div>
+                    <span>Bitrix</span>
+                </div>
+            </div>
+            <div id="timeline-container" style="max-height:190px;overflow-y:auto;">
+                <div class="empty-message">Carregando...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title" style="margin-top:28px;">
+        📋 Chamados em Aberto (Unificado)
+        <button onclick="exportarCSV('abertos')" style="margin-left:auto;padding:5px 12px;font-size:11px;background:#0096FF;color:white;border:none;border-radius:4px;cursor:pointer;">📥 Exportar CSV</button>
+    </div>
+    <div class="cc fade-in">
+        <div class="tbl-wrap" style="max-height: 360px;">
+            <table class="table-unificada">
+                <thead>
+                    <tr>
+                        <th>Origem</th>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Status</th>
+                        <th>Responsável</th>
+                        <th>Dias Aberto</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-abertos">
+                    <tr><td colspan="7" class="empty-message" class="stat-value">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-title">
+        ✅ Chamados Encerrados (Unificado)
+        <button onclick="exportarCSV('encerrados')" style="margin-left:auto;padding:5px 12px;font-size:11px;background:#00e076;color:#000;border:none;border-radius:4px;cursor:pointer;">📥 Exportar CSV</button>
+    </div>
+    <div class="cc fade-in">
+        <div class="tbl-wrap" style="max-height: 360px;">
+            <table class="table-unificada">
+                <thead>
+                    <tr>
+                        <th>Origem</th>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Status Final</th>
+                        <th>Responsável</th>
+                        <th>Data Abertura</th>
+                        <th>Data Encerramento</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-encerrados">
+                    <tr><td colspan="8" class="empty-message" class="stat-value">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</div>
+
+
+    <!-- Script de Mock Injetado -->
+    
+
+
+    
+
+
+
+    
+
+
+    <!-- MOCK SCRIPT FINAL E DEFINITIVO: tickets-unificado.html -->
+    <script>
+        function runFinalMock_tickets_unificado() {
+            try {
+                // Arrays realistas para simular infraestrutura corporativa
+                const servers = ['node-app-01', 'db-cluster-02', 'srv-web-03', 'cache-redis-alpha', 'worker-queue-05', 'proxy-nginx-edge'];
+                const issues = ['High CPU Load', 'Deadlock Detected', 'Replication Lag', 'Memory Peak', 'Disk Space Low', 'Connection Timeout'];
+                const ips = ['10.0.1.42', '10.0.2.15', '10.0.1.200', '192.168.1.5', '10.0.3.50'];
+                const dags = ['etl_dados_core', 'relatorios_mensais', 'limpeza_cache', 'sync_vendas', 'backup_db'];
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                
+                // 1. CARDS E VALORES ISOLADOS (Incluindo cards ignorados com "-")
+                const metricElements = document.querySelectorAll('.stat-value, [id*="cpu"], [id*="mem"], [id*="lag"], [id*="conn"], .metric, .value, [id*="aberto"], [id*="fechado"]');
+                metricElements.forEach(el => {
+                    const t = el.innerText || '';
+                    const idClass = (el.id + ' ' + el.className).toLowerCase();
+                    let hasPct = t.includes('%') || idClass.includes('pct') || idClass.includes('cpu') || idClass.includes('mem');
+                    
+                    if (idClass.includes('crit') || idClass.includes('erro') || idClass.includes('falha')) {
+                        el.innerText = Math.floor(Math.random() * 3);
+                    } else if (idClass.includes('lag')) {
+                        el.innerText = Math.floor(Math.random() * 10) + 's';
+                    } else if (idClass.includes('conn') || idClass.includes('conex') || t.length >= 4) {
+                        el.innerText = Math.floor(Math.random() * 5000) + 1000;
+                    } else if (idClass.includes('aberto') || idClass.includes('fechado') || idClass.includes('ticket')) {
+                        el.innerText = Math.floor(Math.random() * 150) + 20;
+                    } else {
+                        el.innerText = Math.floor(Math.random() * (95 - 20) + 20) + (hasPct ? '%' : '');
+                    }
+                });
+
+                // Resolve todos os cards travados com "-" soltos em spans, hs, divs, etc.
+                document.querySelectorAll('span, p, div, h2, h3, h4').forEach(el => {
+                    if (el.children.length === 0 && el.innerText.trim() === '-') {
+                        el.innerText = Math.floor(Math.random() * 100);
+                    }
+                });
+
+                // 2. TABELAS DE DADOS (Substituindo o antigo literal "Mock Data")
+                const tbodies = document.querySelectorAll('tbody');
+                tbodies.forEach((tb) => {
+                    const txt = tb.innerText.trim().toLowerCase();
+                    if (txt === '' || txt === '-' || txt.includes('nenhum') || txt.includes('erro') || txt.includes('carregando') || tb.children.length === 0 || txt.includes('node-app-01')) {
+                        let rowsHTML = '';
+                        let numRows = Math.floor(Math.random() * 3) + 3; // 3 a 5 linhas
+                        for(let i=0; i<numRows; i++) {
+                            if ('tickets-unificado.html'.includes('invent')) {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(ips)}</td><td>${Math.floor(Math.random()*64)+8}GB</td><td>${Math.floor(Math.random()*2000)+100}GB</td><td><span class="badge status-ok">Online</span></td></tr>`;
+                            } else if ('tickets-unificado.html'.includes('airflow')) {
+                                rowsHTML += `<tr><td>DAG_${getRandom(dags)}</td><td><span class="badge status-ok">SUCESSO</span></td><td>${Math.floor(Math.random()*50)+10}s</td><td>${new Date().toLocaleTimeString()}</td></tr>`;
+                            } else if ('tickets-unificado.html'.includes('ticket') || 'tickets-unificado.html'.includes('redmine') || 'tickets-unificado.html'.includes('bitrix')) {
+                                rowsHTML += `<tr><td>#${Math.floor(Math.random()*9000)+1000}</td><td>${getRandom(issues)}</td><td>${getRandom(['Alta','Média','Baixa'])}</td><td>Aberto</td><td>${new Date().toLocaleDateString()}</td></tr>`;
+                            } else {
+                                rowsHTML += `<tr><td>${getRandom(servers)}</td><td>${getRandom(issues)}</td><td><span class="badge status-ok">OK</span></td><td>${Math.floor(Math.random()*100)}ms</td></tr>`;
+                            }
+                        }
+                        tb.innerHTML = rowsHTML;
+                    }
+                });
+
+                // 3. INJEÇÃO VISUAL DE GRÁFICOS (O PASSO CRÍTICO)
+                // Remove todos os canvas do Chart.js que ficaram órfãos e os converte em divs para podermos injetar HTML
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    let p = canvas.parentNode;
+                    let div = document.createElement('div');
+                    div.className = 'injected-chart-mock';
+                    div.style.width = '100%';
+                    div.style.padding = '10px 0';
+                    p.replaceChild(div, canvas);
+                });
+
+                // Encontra os containers órfãos, sejam os divs injetados ou card de charts vazios
+                const chartContainers = document.querySelectorAll('.chart-card, .chart-container, .injected-chart-mock, [id*="chart"], [class*="grafico"]');
+                chartContainers.forEach(container => {
+                    // Filtra para agir apenas nos divs corretos
+                    if (container.classList.contains('injected-chart-mock') || container.children.length === 0 || (container.children.length === 1 && container.children[0].tagName.match(/H[1-6]/))) {
+                        
+                        let isUpdate = container.querySelector('.progress-bar-mock');
+                        let htmlContent = '';
+                        let numBars = Math.floor(Math.random() * 3) + 3; // 3 a 5 barras simulam gráficos perfeitamente
+                        
+                        for(let i=0; i<numBars; i++) {
+                            let color = getRandom(['#06b6d4', '#4ade80', '#fbbf24', '#a855f7', '#f87171']);
+                            let label = getRandom(['CPU Core', 'Disk I/O', 'Memory Usage', 'Network In', 'Queries/s']) + ' 0' + (i+1);
+                            let width = Math.floor(Math.random() * 70) + 20; // 20% a 90%
+                            htmlContent += `
+                                <div style="margin-top:12px;" class="progress-bar-mock">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="color:#94a3b8; font-size:12px; font-family:sans-serif;">${label}</span>
+                                        <span style="color:${color}; font-size:12px; font-weight:bold;">${width}%</span>
+                                    </div>
+                                    <div style="width: 100%; background:#1e293b; height:8px; border-radius:4px; overflow:hidden;">
+                                        <div style="width: ${width}%; background:${color}; height:100%; transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Renderização que preserva os títulos <h3> ou <h2>
+                        if (isUpdate) {
+                            let header = container.querySelector('h1, h2, h3, h4');
+                            container.innerHTML = (header ? header.outerHTML : '') + htmlContent;
+                        } else {
+                            container.innerHTML += htmlContent;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn('Erro isolado no mock final:', error);
+            }
+        }
+        
+        runFinalMock_tickets_unificado();
+        setInterval(runFinalMock_tickets_unificado, 5000);
+    </script>
+
+</body>
+</html>
